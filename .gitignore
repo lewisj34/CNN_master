@@ -1,0 +1,5 @@
+# ignore results dir
+results/
+
+# ignore data dir
+seg/data/

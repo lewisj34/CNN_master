@@ -3,7 +3,7 @@ import torch
 import click
 import yaml
 import time
-
+asdf
 from pathlib import Path
 from torchsummary import summary 
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE

@@ -1,0 +1,10 @@
+model:
+  unet:
+    image_size: null
+    in_channels: 3
+    num_classes: 1
+    patch_size: 16
+    bilinear: true
+    backbone: null
+# room to add in/out channels for each of the up/down convolutions but 
+# we'll worry about that at a later date 

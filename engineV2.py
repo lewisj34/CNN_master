@@ -3,7 +3,7 @@ from torch.autograd import Variable
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.tversky import TverskyLoss
-from seg.utils.inferenceV2 import inference
+from seg.utils.inferenceV2 import inference, inference_multi_class
 from seg.utils.soft_dice_loss import SoftDiceLoss
 
 from seg.utils.utils import AvgMeter
@@ -22,6 +22,7 @@ def train_one_epochV2(
     test_loader,
     model, 
     inferencer,
+    num_classes,
     optimizer,
     batch_size,
     grad_norm, 
@@ -133,8 +134,13 @@ def train_one_epochV2(
     # os.makedirs(checkpoint_path, exist_ok=True)
 
     if (curr_epoch+1) % 1 == 0:
-        meanValidLoss, meanValidIoU, meanValidDice  = inference(model, valid_loader, inferencer, loss_fn, 'valid')
-        meanTestLoss, meanTestIoU, meanTestDice = inference(model, test_loader, inferencer, loss_fn, 'test')
+        if num_classes == 1:
+            meanValidLoss, meanValidIoU, meanValidDice  = inference(model, valid_loader, inferencer, loss_fn, 'valid')
+            meanTestLoss, meanTestIoU, meanTestDice = inference(model, test_loader, inferencer, loss_fn, 'test')
+        elif num_classes == 2:
+            meanValidLoss, meanValidIoU, meanValidDice  = inference_multi_class(model, valid_loader, inferencer, loss_fn, 'valid')
+            meanTestLoss, meanTestIoU, meanTestDice = inference_multi_class(model, test_loader, inferencer, loss_fn, 'test')         
+
         if meanTestLoss < best_loss:
             print('New best loss: ', meanTestLoss)
             best_loss = meanTestLoss

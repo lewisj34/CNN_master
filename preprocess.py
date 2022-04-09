@@ -32,7 +32,7 @@ def list_overlap(a, b):
 
 def generate_split_txt_files(
     parent_dir='/home/john/Documents/Datasets/kvasir_merged'
-    ):
+):
     ''' 
     Generates .txt files for train, valid, and test sets by creating a csv for 
     each (train, valid, ...) and then converting that csv to a .txt file for 
@@ -150,7 +150,7 @@ def process_dataset(
     save_location from corresponding img_dir and ann_dir with corr. height and
     width 
     Args:
-        split_path: path to split.txt file, of form: {train, valid, test}.txt
+        split_path: path to split.txt file, EITHER: {train, valid, test}.txt
         save_location: directory to save .npy data files 
         img_dir: location of img paths that split path points 
         ann_dir: location of ann paths that split path points
@@ -214,7 +214,7 @@ def data_files_exist(save_dir):
     else:
         return False
 
-def split_and_convert_to_npy(
+def split_and_convert_to_npy_OLD(
     dataset = "kvasir", 
     save_dir = "seg/data",
     image_height = 192, 
@@ -298,4 +298,4 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
 
         
 if __name__ == "__main__":
-    split_and_convert_to_npy()
+    split_and_convert_to_npy_OLD()

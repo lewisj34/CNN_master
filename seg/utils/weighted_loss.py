@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np 
 from skimage.segmentation import find_boundaries
-from preprocess import split_and_convert_to_npy
+from seg.utils.data.generate_npy import split_and_convert_to_npyV2
 from seg.utils.dataset import get_dataset
 
 def weighted_loss(seg_map, ground_truth):
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # import data and generate dataset  
     if dataset == 'kvasir':
-        split_and_convert_to_npy(dataset, save_dir, image_height, image_width)
+        split_and_convert_to_npyV2(dataset, save_dir, (image_height, image_width), (None, None), (image_height, image_width), False)
     else:
         print("Error: only Kvasir dataset supported at this time")
         sys.exit(1)

@@ -1,0 +1,96 @@
+# things to check for:
+# is the number of input channels the same for all levels within a stage (i think this is checked, but it should give an error message when defining nn.Layer parameters)
+# is the number of output channels the same for all levels within a stage (i think this is checked)
+# is the number of intermediate channels the same in between set of pairs in a level (NOTE: this is NOT checked, but it should give an error message when defining nn.Layer parameterse)
+# does the number of channel pairs equal the number of module types (i think this is checked)
+
+stage_1:
+  num_levels: 3 # NEED TO PUT THIS IN INDIVIDUALLY - MAKE SURE ITS RIGHT ON YOUR OWN AKSJHDKASDJHFKAHSNDFKAHNSDIKFHNADKNFAKJSDN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  levels:
+    level1:
+      channels:
+        - [3, 64]     # input, inter
+        - [64, 22, 64]    # inter, inter
+        - [64, 128]   # inter, output 
+      module_type:
+        - elementary
+        - ielementaryplus
+        - elementary
+    level2:
+      channels:
+        - [3, 64]     # input, inter
+        - [64, 64]    # inter, inter
+        - [64, 54, 128]   # inter, output 
+      module_type:
+        - elementary
+        - elementary
+        - ielementaryplus 
+    level3:
+      channels:
+        - [3, 64]     # input, inter
+        - [64, 64]    # inter, inter
+        - [64, 128]   # inter, output 
+      module_type:
+        - basic
+        - basic
+        - basic 
+
+
+# stage2:
+#   level1:
+#     input_channels: 
+#       - 3
+#     inter_channels:
+#       - 64
+#       - 64
+#       - 64
+#     output_channels:
+#       - 64
+#     module_type:
+#       - basic
+#       - basic
+#       - basic
+#       - basic
+#   level2: 
+#     input_channels: 
+#       - 3
+#     inter_channels:
+#       - 64
+#       - 64
+#       - 64
+#     output_channels:
+#       - 64
+#     module_type:
+#       - bottleneck
+#       - bottleneck
+#       - bottleneck 
+#       - basic 
+# stage3:
+#   level1: 
+#     input_channels: 
+#       - 3
+#     inter_channels:
+#       - 64
+#       - 64
+#       - 64
+#     output_channels:
+#       - 64
+#     module_type:
+#       - bottleneck
+#       - basic
+#       - basic 
+#   level2:
+#     input_channels: 
+#       - 3
+#     inter_channels:
+#       - 64
+#       - 64
+#       - 64
+#     output_channels:
+#       - 64
+#     module_type:
+#       - basic
+#       - basic
+#       - basic 
+
+  

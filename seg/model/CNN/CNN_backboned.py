@@ -163,24 +163,24 @@ class CNN_BRANCH_WITH_BACKBONE(nn.Module):
                 features[name] = x; # print(f'name in shortcut features: {name}')
                 if self.input_size == 256:
                     if x.shape[3] == 16:
-                        self.x_1_16_coarse = x; # print(f'self.x_1_16_coarse.shape: {self.x_1_16_coarse.shape}')
+                        self.x_1_16 = x; # print(f'self.x_1_16_coarse.shape: {self.x_1_16_coarse.shape}')
                     elif x.shape[3] == 32:
-                        self.x_1_8_coarse = x; # print(f'self.x_1_8_coarse.shape: {self.x_1_8_coarse.shape}')
+                        self.x_1_8 = x; # print(f'self.x_1_8_coarse.shape: {self.x_1_8_coarse.shape}')
                     elif x.shape[3] == 64:
-                        self.x_1_4_coarse = x; # print(f'self.x_1_4_coarse.shape: {self.x_1_4_coarse.shape}')
+                        self.x_1_4 = x; # print(f'self.x_1_4_coarse.shape: {self.x_1_4_coarse.shape}')
                     elif x.shape[3] == 128:
-                        self.x_1_2_coarse = x; # print(f'self.x_1_2_coarse.shape: {self.x_1_2_coarse.shape}')
+                        self.x_1_2 = x; # print(f'self.x_1_2_coarse.shape: {self.x_1_2_coarse.shape}')
                 if self.input_size == 512:
                     if x.shape[3] == 16:
-                        self.x_1_32_coarse = x; # print(f'self.x_1_32_coarse.shape: {self.x_1_32_coarse.shape}')
+                        self.x_1_32 = x; # print(f'self.x_1_32_coarse.shape: {self.x_1_32_coarse.shape}')
                     elif x.shape[3] == 32:
-                        self.x_1_16_coarse = x; # print(f'self.x_1_16_coarse.shape: {self.x_1_16_coarse.shape}')
+                        self.x_1_16 = x; # print(f'self.x_1_16_coarse.shape: {self.x_1_16_coarse.shape}')
                     elif x.shape[3] == 64:
-                        self.x_1_8_coarse = x; # print(f'self.x_1_8_coarse.shape: {self.x_1_8_coarse.shape}')
+                        self.x_1_8 = x; # print(f'self.x_1_8_coarse.shape: {self.x_1_8_coarse.shape}')
                     elif x.shape[3] == 128:
-                        self.x_1_4_coarse = x; # print(f'self.x_1_4_coarse.shape: {self.x_1_4_coarse.shape}')
+                        self.x_1_4 = x; # print(f'self.x_1_4_coarse.shape: {self.x_1_4_coarse.shape}')
                     elif x.shape[3] == 256:
-                        self.x_1_2_coarse = x; # print(f'self.x_1_2_coarse.shape: {self.x_1_2_coarse.shape}')    
+                        self.x_1_2 = x; # print(f'self.x_1_2_coarse.shape: {self.x_1_2_coarse.shape}')    
 
             if name == self.bb_out_name:
                 break

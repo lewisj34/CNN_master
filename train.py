@@ -5,10 +5,13 @@ import yaml
 import time
 
 from pathlib import Path
-from torchsummary import summary 
+from torchsummary import summary
+from seg.utils.data.generate_npy import split_and_convert_to_npyV2
+from seg.utils.err_codes import crop_err1, crop_err2, crop_err3,resize_err1, resize_err2, resize_err3
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
 from seg.model.CNN.CNN_plus import UNetISDNetHybrid, UNet_plain
 from seg.model.Fusion.FusionNetwork import SimpleFusionNetwork, OldFusionNetwork, SimplestFusionNetwork
+from seg.model.medical_transformer.model_codes import unetplusplus, mix_net_wopos_512, mix_net_wopos
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.iou_loss import IoULoss
 from seg.model.losses.weighted import Weighted
@@ -17,7 +20,7 @@ from seg.model.losses.dicebce_loss import DiceBCELoss
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.tversky import TverskyLoss
 from seg.model.siddnet.siddnet import Stage1_IDSNet, Stage2_IDSNet
-from seg.utils.inferenceV2 import InferenceModule
+from seg.utils.inferenceV2 import InferenceModule, SegmentationMetrics
 from seg.utils.t_dataset import get_tDataset
 
 from seg.utils.visualize import visualizeModelOutputfromDataLoader, plot_test_valid_loss
@@ -25,13 +28,13 @@ from seg.model.segmenter.create_model import create_transformer, create_vit
 from seg.utils.dataset import get_TestDatasetV2, get_dataset
 from seg.utils.sched import WarmupPoly
 from seg.utils.flops_counter import add_flops_counting_methods
-from preprocess import split_and_convert_to_npy
+from preprocess import split_and_convert_to_npy_OLD
 from engine import train_one_epoch
 from engineV2 import train_one_epochV2
 
 ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB']
 ALLOWABLE_MODELS = ['trans', "OldFusionNetwork", "SimplestFusionNetwork", 
-    "IDSNet", "UNet_plain", "UNet_backboned", "siddnet"]
+    "IDSNet", "UNet_plain", "UNet_backboned", "siddnet", 'unetplusplus', 'mix_net_wopos']
 ALLOWABLE_CNN_MODELS = ['unet']
 ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 
     'resnet152', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 
@@ -50,6 +53,9 @@ ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
 @click.option('--cnn_backbone', type=str, default='resnet18')
 @click.option('--image_height', type=int, default=256)
 @click.option('--image_width', type=int, default=256)
+@click.option('--crop_height', type=int, default=None)
+@click.option('--crop_width', type=int, default=None)
+@click.option('--reimport_data', type=bool, default=False)
 @click.option('--dropout', type=int, default=0.0)
 @click.option('--drop_path_rate', type=int, default=0.1)
 @click.option('--n_cls', type=int, default=1)
@@ -73,6 +79,9 @@ def main(
     cnn_backbone,
     image_height,
     image_width, 
+    crop_height,
+    crop_width,
+    reimport_data,
     dropout,
     drop_path_rate,
     n_cls,
@@ -88,6 +97,10 @@ def main(
     lr_sched,
     loss_type,
 ):
+
+    # print(f'We havent input the new main code from preprocessV2.py in yet.')
+    # exit(1)
+
     assert model_name in ALLOWABLE_MODELS, 'invalid model_name'
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'
@@ -97,7 +110,85 @@ def main(
     save_dir = save_dir + '/' + dataset 
 
     # import data and generate dataset 
-    split_and_convert_to_npy(dataset, save_dir, image_height, image_width)
+    """
+    ****************************** USAGE ****************************** 
+    4 Situations we need to cover:
+        1. Just resize, no crop. 
+            -> given by crop_size == None. 
+        2. Resize and then crop. 
+            -> both image_size and crop_size given. 
+        3. No resize, just crop. (Needs an additional check here potentially 
+            when iterating through the dir and openCVing the images, lets run
+            a test on this. - shouldnt be hard) 
+            -> given by image_size, image_width = 0. 
+            -> crop_size must not be None 
+    """
+    if crop_height == 0 or crop_width == 0:
+        assert crop_height == 0 and crop_width == 0, crop_err3(crop_height, crop_width)
+        print(f'Crop_height or crop_width was manually input in command line as 0. Resetting thes values to None type.')
+        crop_height = None
+        crop_width = None 
+
+    if crop_height is not None or crop_width is not None:
+        """
+        2 situations apply when crop_size is given. 
+            1. Resize and then crop. 
+            2. No resize, just crop. 
+        """
+        # following check applies to both situations
+        assert crop_height is not None and crop_width is not None, crop_err1(crop_height, crop_width)
+        
+        # situation 1: resize and then crop
+        if image_height != 0 or image_width != 0:
+            print(f'Resizing and cropping.')
+            assert image_height != 0 and image_width != 0, resize_err1(image_height, image_width)
+            
+            if image_height < crop_height or image_width < crop_width:
+                raise ValueError(crop_err2(crop_height, crop_width, image_height, image_width))
+            resize_size = (image_height, image_width)
+            crop_size = (crop_height, crop_width)
+            image_size = crop_size
+        
+        # situation 2: just crop (because image_height and width are given as 0) 
+        else:
+            print(f'Cropping but not resizing the input data.')
+            assert image_height == 0 and image_width == 0, resize_err2(image_height, image_width)
+            resize_size = (None, None)
+            crop_size = (crop_height, crop_width)
+            image_size = (crop_height, crop_width)
+
+    else:
+        print(f'Reszing but not cropping the input data.')
+        assert image_height != 0 and image_width != 0, resize_err3(image_height, image_width)
+        resize_size = (image_height, image_width)
+        crop_size = (None, None)
+        image_size = resize_size
+
+    # if no_transforms_before_runtime:
+    #     resize_size = (None, None)
+    #     crop_size = (None, None)
+    #     image_size = (None, None)
+    #     print(f'********* Warning: no resize or cropping, just importing as is to binaries... *********')
+    #     raise NotImplementedError(f'No resize or cropping val assigned, just importing as is to binaries -> Exiting for now...')
+
+    print(f'resize_size: {resize_size}')
+    print(f'crop_size: {crop_size}')
+    print(f'image_size: {image_size}')
+
+    if resize_size[0] != resize_size[1] or crop_size[0] != crop_size[1] \
+        or image_size[0] != image_size[1]:
+        print(f'********* Warning: input image dims are not square. *********')
+
+    # split_and_convert_to_npy_OLD(dataset, save_dir, image_height, image_width)
+    split_and_convert_to_npyV2(
+        dataset = dataset,
+        save_dir = save_dir, 
+        resize_size = resize_size,
+        crop_size = crop_size,
+        image_size = image_size,
+        reimport_data = reimport_data, 
+        num_classes = n_cls,
+    )
 
     trans_cfg = yaml.load(open(Path(__file__).parent / "vit_config.yml", "r"), 
         Loader=yaml.FullLoader)
@@ -110,7 +201,7 @@ def main(
         decoder_cfg = trans_cfg["decoder"][decoder]
 
     # images
-    trans_model_cfg['image_size'] = (image_height, image_width)
+    trans_model_cfg['image_size'] = image_size
     trans_model_cfg["dropout"] = dropout
     trans_model_cfg["drop_path_rate"] = drop_path_rate
     trans_model_cfg['backbone'] = backbone 
@@ -128,12 +219,14 @@ def main(
     cnn_cfg = yaml.load(open(Path(__file__).parent / "cnn_config.yml", "r"), 
         Loader=yaml.FullLoader)
     cnn_model_cfg = cnn_cfg['model'][cnn_model_name]
-    cnn_model_cfg['image_size'] = (image_height, image_width)  
+    cnn_model_cfg['image_size'] = image_size
     cnn_model_cfg['patch_size'] = patch_size
     cnn_model_cfg['batch_size'] = batch_size
     cnn_model_cfg['num_classes'] = n_cls
     cnn_model_cfg['in_channels'] = 3 # this isn't anywhere in transformer but 
     cnn_model_cfg['backbone'] = cnn_backbone
+
+    print(f'trans_model_cfg:\n {trans_model_cfg}')
     print(f'cnn_model_cfg:\n {cnn_model_cfg}')
 
     if model_name == "trans":
@@ -145,7 +238,7 @@ def main(
         model = OldFusionNetwork(
             cnn_model_cfg, 
             trans_model_cfg,
-            cnn_pretrained=True,
+            cnn_pretrained=False,
             with_fusion=True,
         ).cuda()
         if cnn_branch_checkpt is not None or trans_branch_checkpt is not None:
@@ -202,7 +295,7 @@ def main(
             patch_size=16
         ).cuda()
     elif model_name == "UNet_backboned":
-        assert image_height == image_width # prob don't need but just keeping in for now 
+        assert image_size[0] == image_size[1], f'dk why this is in'
         model = CNN_BRANCH_WITH_BACKBONE(
             cnn_model_cfg['in_channels'], 
             cnn_model_cfg['num_classes'], 
@@ -211,7 +304,7 @@ def main(
             pretrained=True,
             with_attention=False,
             with_superficial=False,
-            input_size = image_height,
+            input_size = image_size[0],
         ).cuda()
     elif model_name == "IDSNet":
         raise ValueError(f'model_name: {model_name} bad, less than 0.1 iou')   
@@ -222,6 +315,8 @@ def main(
             q = 3,
             upsample2GTsize = True,
         ).cuda()
+    elif model_name == 'mix_net_wopos':
+        model = mix_net_wopos(num_classes=n_cls).cuda()
     print(f'Model {model_name} loaded succesfully.')    
     ###########################################################################
 
@@ -282,7 +377,8 @@ def main(
         save_dir + "/data_train.npy", # location of train images.npy file (str)
         save_dir + "/mask_train.npy" , # location of train masks.npy file (str)
         batchsize=batch_size, 
-        normalization="deit" if "deit" in backbone else "vit")
+        normalization="deit" if "deit" in backbone else "vit"
+    )
 
 
     print("Begin training...")
@@ -296,11 +392,16 @@ def main(
         model_dir = f'results/{model._get_name()}/{model._get_name()}_1'
     else:
         i = 1
-        while os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}'):
-            print(f'Dir: results/{model._get_name()}/{model._get_name()}_{i} already exists. Creating new one.')
+        while os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}') \
+            and os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}/test_loss_file.txt'): # check to see that the test loss files have been generated
+            print(f'Dir: results/{model._get_name()}/{model._get_name()}_{i} already exists with save files.')
             i += 1
         model_dir = f'results/{model._get_name()}/{model._get_name()}_{i}'
-        os.mkdir(model_dir)
+        if not os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}'):
+            print(f'Dir: results/{model._get_name()}/{model._get_name()}_{i} doesnt exist. Creating new one.')
+            os.mkdir(model_dir)
+        else:
+            print(f'Dir: results/{model._get_name()}/{model._get_name()}_{i} exists, but doesnt have any save files, using this one.')
 
     checkpt_save_dir = model_dir + '/current_checkpoints/' 
     if not os.path.exists(checkpt_save_dir):
@@ -333,8 +434,11 @@ def main(
         pin_memory=True,
     )
 
-    inferencer = InferenceModule(eps=0.0001, activation='0-1')
-    
+    if n_cls == 1:
+        inferencer = InferenceModule(eps=0.0001, activation='0-1')
+    elif n_cls == 2:
+        inferencer = SegmentationMetrics(eps=1e-5, average=True, ignore_background=False, activation='sigmoid')
+
     loss_fn_params = dict()
     if loss_type == "weight":
         loss_fn = Weighted()
@@ -363,6 +467,7 @@ def main(
             test_loader = test_loader,
             model = model, 
             inferencer = inferencer,
+            num_classes = n_cls,
             optimizer = optimizer,
             batch_size = batch_size,
             grad_norm = grad_norm, 
@@ -388,8 +493,8 @@ def main(
         "dataset": dataset,
         "actual_model": model._get_name(),
         "model_name": model_name,
-        "image_height": image_height,
-        "image_width": image_width,
+        "final_image_height": image_size[0],
+        "final_image_width": image_size[1],
 
         "dropout": dropout,
         "drop_path_rate": drop_path_rate,

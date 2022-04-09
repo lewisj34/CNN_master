@@ -39,7 +39,7 @@ class OldFusionNetwork(nn.Module):
                 patch_size=cnn_model_cfg['patch_size'],
                 backbone_name=cnn_model_cfg['backbone'],
                 bilinear=True,
-                pretrained=True,
+                pretrained=self.cnn_pretrained,
                 with_fusion=True,
                 input_size=cnn_model_cfg['image_size'][0],
             )

@@ -498,9 +498,12 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
 
     if dataset == 'kvasir':
         parent_dir = '/home/john/Documents/Datasets/kvasir_merged'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'CVC_ClinicDB':
         parent_dir = '/home/john/Documents/Datasets/CVC-ClinicDB/PNG'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'ETIS':
+        # assert os.path.isdir(parent_dir)
         raise NotImplementedError(f'dataset: {dataset} not set up yet.')
     
     TRAIN_SPLIT_PATH = parent_dir + "/splits/" + "train.txt"

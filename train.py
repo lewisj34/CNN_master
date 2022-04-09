@@ -27,7 +27,6 @@ from seg.utils.visualize import visualizeModelOutputfromDataLoader, plot_test_va
 from seg.model.segmenter.create_model import create_transformer, create_vit
 from seg.utils.dataset import get_TestDatasetV2, get_dataset
 from seg.utils.sched import WarmupPoly
-from seg.utils.flops_counter import add_flops_counting_methods
 from preprocess import split_and_convert_to_npy_OLD
 from engine import train_one_epoch
 from engineV2 import train_one_epochV2

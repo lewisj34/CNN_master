@@ -2,47 +2,8 @@ import torch
 import torch.nn as nn 
 import torchvision
 
-from .CNN_parts import DoubleConv, Down, Up, OutConv
+from .CNN_parts import DoubleConv, Down, Up, OutConv, DownASPP
 from torchsummary import summary 
-
-# ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 
-#     'resnet152', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 
-#     'densenet201', 'unet_encoder', None]
-
-# class CNN_BRANCH_WITH_BACKBONE(nn.Module):
-#     def __init__(
-#         self, 
-#         n_channels, 
-#         n_classes, 
-#         patch_size, 
-#         bilinear=True,
-#         backbone_name=None,
-#         pretrained=True,
-#     ):
-#         super(CNN_BRANCH_WITH_BACKBONE, self).__init__()
-#         self.n_channels = n_channels
-#         self.n_classes = n_classes
-#         self.bilinear = bilinear
-#         self.patch_size = patch_size 
-#         self.pretrained = pretrained
-#         assert self.patch_size == 16 or self.patch_size == 32, \
-#             'Patch size must be {16, 32}'
-
-#         # backbone stuff - can prob turn this into a funciton where we just 
-#         # return the value from func to self.base_model
-#         allowable_backbones = ALLOWABLE_CNN_BACKBONES
-#         if backbone_name == 'resnet18':
-#             self.base_model = torchvision.models.resnet18(pretrained=pretrained)
-#         elif backbone_name == 'resnet152':
-#             self.base_model = torchvision.models.resnet152(pretrained=pretrained)
-#         else:
-#             raise ValueError(
-#                 f'{backbone_name} invalid. accepted backbones: {allowable_backbones}')
-        
-#     def forward(self, x):
-#         x = self.base_model(x)
-#         return x 
-
 
 
 class CNN_BRANCH(nn.Module):
@@ -56,11 +17,11 @@ class CNN_BRANCH(nn.Module):
             'Patch size must be {16, 32}' 
 
         self.inc = DoubleConv(n_channels, 64)
-        self.down1 = Down(64, 128)
-        self.down2 = Down(128, 256)
-        self.down3 = Down(256, 512)
+        self.down1 = DownASPP(64, 128)
+        self.down2 = DownASPP(128, 256)
+        self.down3 = DownASPP(256, 512)
         factor = 2 if bilinear else 1
-        self.down4 = Down(512, 1024 // factor)
+        self.down4 = DownASPP(512, 1024 // factor)
 
         if self.patch_size == 32:
             self.down5 = Down(1024 // factor, 1024 // factor)

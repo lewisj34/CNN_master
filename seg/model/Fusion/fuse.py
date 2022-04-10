@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from seg.model.CNN.CNN_parts import Down, Up
-from seg.model.siddnet.siddnet import SuperficialModule
+from seg.model.siddnet.parts import SuperficialModule
 
 '''
 Okay so we want two fusion modules here. One where 

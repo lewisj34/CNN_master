@@ -5,9 +5,8 @@ from pathlib import Path
 
 from seg.model.CNN.CNN import CNN_BRANCH
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
-from seg.model.segmenter.create_model import create_transformer
+from seg.model.transformer.create_model import create_transformer
 from seg.model.Fusion.fuse import SimpleFusion
-from seg.model.siddnet.siddnet import CBR, SuperficialModule_subblock, CCMSubBlock
 from .fuse import MiniEncoderFuse
 
 class OldFusionNetwork(nn.Module):
@@ -17,6 +16,7 @@ class OldFusionNetwork(nn.Module):
         trans_model_cfg,
         cnn_pretrained=False,
         with_fusion=True,
+        with_aspp=False,
         ):
         super(OldFusionNetwork, self).__init__()
 
@@ -48,7 +48,8 @@ class OldFusionNetwork(nn.Module):
                 n_channels=cnn_model_cfg['in_channels'],
                 n_classes=cnn_model_cfg['num_classes'],
                 patch_size=cnn_model_cfg['patch_size'],
-                bilinear=True
+                use_ASPP=with_aspp,
+                bilinear=True,
             )
         # now populate dimensions 
         self.cnn_branch.get_dimensions(

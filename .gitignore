@@ -3,3 +3,6 @@ results/
 
 # ignore data dir
 seg/data/
+
+# ignore defunct
+defunct/

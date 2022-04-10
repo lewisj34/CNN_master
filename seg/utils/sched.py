@@ -8,7 +8,7 @@ class WarmupPoly(object):
         self.init_lr = init_lr
         self.total_ep = total_ep
         self.warmup_ep = int(warmup_ratio*total_ep)
-        print("warup unitl " + str(self.warmup_ep))
+        print("Warmup until " + str(self.warmup_ep))
         self.poly_pow = poly_pow
 
     def get_lr(self, epoch):

@@ -7,7 +7,7 @@ from torchsummary import summary
 
 
 class CNN_BRANCH(nn.Module):
-    def __init__(self, n_channels, n_classes, patch_size, bilinear=True):
+    def __init__(self, n_channels, n_classes, patch_size, use_ASPP=False, bilinear=True):
         super(CNN_BRANCH, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -16,12 +16,22 @@ class CNN_BRANCH(nn.Module):
         assert self.patch_size == 16 or self.patch_size == 32, \
             'Patch size must be {16, 32}' 
 
-        self.inc = DoubleConv(n_channels, 64)
-        self.down1 = DownASPP(64, 128)
-        self.down2 = DownASPP(128, 256)
-        self.down3 = DownASPP(256, 512)
-        factor = 2 if bilinear else 1
-        self.down4 = DownASPP(512, 1024 // factor)
+        # if use ASPP introduce ASPP modules in the downsample operations 
+        if use_ASPP:
+            self.inc = DoubleConv(n_channels, 64)
+            self.down1 = DownASPP(64, 128)
+            self.down2 = DownASPP(128, 256)
+            self.down3 = DownASPP(256, 512)
+            factor = 2 if bilinear else 1
+            self.down4 = DownASPP(512, 1024 // factor)
+        # just use normal downsampling operations (conv + maxpool)
+        else:
+            self.inc = DoubleConv(n_channels, 64)
+            self.down1 = Down(64, 128)
+            self.down2 = Down(128, 256)
+            self.down3 = Down(256, 512)
+            factor = 2 if bilinear else 1
+            self.down4 = Down(512, 1024 // factor)
 
         if self.patch_size == 32:
             self.down5 = Down(1024 // factor, 1024 // factor)

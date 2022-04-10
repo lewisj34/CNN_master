@@ -229,10 +229,6 @@ class CNN_BRANCH_WITH_BACKBONE(nn.Module):
         del dummy_tensor
 
 class UpsampleBlock(nn.Module):
-
-    # TODO: separate parametric and non-parametric classes?
-    # TODO: skip connection concatenated OR added
-
     def __init__(
         self, 
         ch_in, 
@@ -300,7 +296,7 @@ class UpsampleBlock(nn.Module):
                         init_weights(m, init_type='kaiming')
 
         # other stuffs
-        from seg.model.siddnet.siddnet import SuperficialModule_subblock, CCMSubBlock, RCCMModule
+        from seg.model.siddnet.parts import SuperficialModule_subblock, CCMSubBlock
         if self.with_superficial:
             self.super_mod1 = SuperficialModule_subblock(nIn=ch_out, d=1, kSize=3, dkSize=3)
             self.super_mod2 = SuperficialModule_subblock(nIn=ch_out, d=1, kSize=3, dkSize=3)

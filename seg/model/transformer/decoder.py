@@ -5,8 +5,8 @@ from einops import rearrange
 
 from timm.models.layers import trunc_normal_
 
-from seg.model.segmenter.blocks import Block, FeedForward
-from seg.model.segmenter.utils import init_weights
+from .blocks import Block, FeedForward
+from .utils import init_weights
 
 
 class DecoderLinear(nn.Module):

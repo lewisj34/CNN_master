@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn 
 from einops import rearrange
 
-from seg.model.segmenter.blocks import Block
-from seg.model.segmenter.utils import init_weights
+from .blocks import Block
+from .utils import init_weights
 
 class DecoderNew(nn.Module):
     def __init__(

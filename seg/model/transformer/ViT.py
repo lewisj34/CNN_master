@@ -5,8 +5,8 @@ from einops import rearrange
 from timm.models.layers import trunc_normal_
 from timm.models.vision_transformer import _load_weights
 
-from seg.model.segmenter.blocks import Block
-from seg.model.segmenter.utils import init_weights, resize_pos_embed
+from .blocks import Block
+from .utils import init_weights, resize_pos_embed
 
 class PatchEmbedding(nn.Module):
     def __init__(self, image_size, patch_size, embed_dim, channels):

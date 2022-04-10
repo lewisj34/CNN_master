@@ -5,13 +5,11 @@ import yaml
 import time
 
 from pathlib import Path
-from torchsummary import summary
 from seg.utils.data.generate_npy import split_and_convert_to_npyV2
 from seg.utils.err_codes import crop_err1, crop_err2, crop_err3,resize_err1, resize_err2, resize_err3
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
-from seg.model.CNN.CNN_plus import UNetISDNetHybrid, UNet_plain
-from seg.model.Fusion.FusionNetwork import SimpleFusionNetwork, OldFusionNetwork, SimplestFusionNetwork
-from seg.model.medical_transformer.model_codes import unetplusplus, mix_net_wopos_512, mix_net_wopos
+from seg.model.CNN.CNN_plus import UNet_plain
+from seg.model.Fusion.FusionNetwork import OldFusionNetwork, SimplestFusionNetwork
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.iou_loss import IoULoss
 from seg.model.losses.weighted import Weighted
@@ -19,21 +17,17 @@ from seg.model.losses.dice_loss import DiceLoss
 from seg.model.losses.dicebce_loss import DiceBCELoss
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.tversky import TverskyLoss
-from seg.model.siddnet.siddnet import Stage1_IDSNet, Stage2_IDSNet
 from seg.utils.inferenceV2 import InferenceModule, SegmentationMetrics
 from seg.utils.t_dataset import get_tDataset
 
 from seg.utils.visualize import visualizeModelOutputfromDataLoader, plot_test_valid_loss
-from seg.model.segmenter.create_model import create_transformer, create_vit
 from seg.utils.dataset import get_TestDatasetV2, get_dataset
 from seg.utils.sched import WarmupPoly
-from preprocess import split_and_convert_to_npy_OLD
-from engine import train_one_epoch
 from engineV2 import train_one_epochV2
 
-ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB']
-ALLOWABLE_MODELS = ['trans', "OldFusionNetwork", "SimplestFusionNetwork", 
-    "IDSNet", "UNet_plain", "UNet_backboned", "siddnet", 'unetplusplus', 'mix_net_wopos']
+ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS']
+ALLOWABLE_MODELS = ["OldFusionNetwork", "SimplestFusionNetwork", "UNet_plain", \
+    "UNet_backboned"]
 ALLOWABLE_CNN_MODELS = ['unet']
 ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 
     'resnet152', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 
@@ -68,7 +62,7 @@ ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
 @click.option('--cnn_branch_checkpt', type=str, default=None, help='path to cnn branch checkpt') # /home/john/Documents/Dev_Linux/segmentation/trans_isolated/seg/current_checkpoints/CNN_BRANCH_WITH_BACKBONE/CNN_BRANCH_WITH_BACKBONE-98.pth
 @click.option('--trans_branch_checkpt', type=str, default=None, help='path to transformer branch checkpt') # /home/john/Documents/Dev_Linux/segmentation/trans_isolated/seg/current_checkpoints/Transformer/Transformer-22.pth
 @click.option('--lr_sched', type=str, default='warmpoly', help='step, poly, multistep, warmpoly')
-@click.option('--loss_type', type=str, default='weight', help='weight, lovasz')
+@click.option('--loss_type', type=str, default='iou', help='iou, weight, lovasz')
 def main(
     dataset,
     model_name,
@@ -97,9 +91,6 @@ def main(
     loss_type,
 ):
 
-    # print(f'We havent input the new main code from preprocessV2.py in yet.')
-    # exit(1)
-
     assert model_name in ALLOWABLE_MODELS, 'invalid model_name'
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'
@@ -111,12 +102,12 @@ def main(
     # import data and generate dataset 
     """
     ****************************** USAGE ****************************** 
-    4 Situations we need to cover:
-        1. Just resize, no crop. 
+    4 Situations we need to check and make sure model can read properly:
+        1. Just resize image, no crop. 
             -> given by crop_size == None. 
-        2. Resize and then crop. 
+        2. Resize image and then crop. 
             -> both image_size and crop_size given. 
-        3. No resize, just crop. (Needs an additional check here potentially 
+        3. No resizing of image, just crop the image. (Needs an additional check here potentially 
             when iterating through the dir and openCVing the images, lets run
             a test on this. - shouldnt be hard) 
             -> given by image_size, image_width = 0. 
@@ -163,13 +154,8 @@ def main(
         crop_size = (None, None)
         image_size = resize_size
 
-    # if no_transforms_before_runtime:
-    #     resize_size = (None, None)
-    #     crop_size = (None, None)
-    #     image_size = (None, None)
-    #     print(f'********* Warning: no resize or cropping, just importing as is to binaries... *********')
-    #     raise NotImplementedError(f'No resize or cropping val assigned, just importing as is to binaries -> Exiting for now...')
-
+    # end of image resize and cropping checks 
+    # print results of resize and cropping values inputted to program 
     print(f'resize_size: {resize_size}')
     print(f'crop_size: {crop_size}')
     print(f'image_size: {image_size}')
@@ -178,7 +164,9 @@ def main(
         or image_size[0] != image_size[1]:
         print(f'********* Warning: input image dims are not square. *********')
 
-    # split_and_convert_to_npy_OLD(dataset, save_dir, image_height, image_width)
+    # now that we have resize size and crop size, split the images into train
+    # test and val sets, and then convert those images to binary for easier
+    # access and less model runtime when running successive training iterations
     split_and_convert_to_npyV2(
         dataset = dataset,
         save_dir = save_dir, 
@@ -189,15 +177,11 @@ def main(
         num_classes = n_cls,
     )
 
-    trans_cfg = yaml.load(open(Path(__file__).parent / "vit_config.yml", "r"), 
+    # import model details for transformer 
+    trans_cfg = yaml.load(open(Path(__file__).parent / "transformer_presets.yml", "r"), 
         Loader=yaml.FullLoader)
     trans_model_cfg = trans_cfg['model'][backbone]
-
-    if "mask_transformer" in decoder: # always wack, hence default is linear - REWRITE THIS AND TAKE MASK TRANSFORMER OUT 
-        decoder_cfg = trans_cfg["decoder"]["mask_transformer"]
-        # raise ValueError(f'Were not doing anything but linear decoder.')
-    else:
-        decoder_cfg = trans_cfg["decoder"][decoder]
+    decoder_cfg = trans_cfg["decoder"][decoder]
 
     # images
     trans_model_cfg['image_size'] = image_size
@@ -228,17 +212,13 @@ def main(
     print(f'trans_model_cfg:\n {trans_model_cfg}')
     print(f'cnn_model_cfg:\n {cnn_model_cfg}')
 
-    if model_name == "trans":
-        model = create_transformer(
-            trans_model_cfg, 
-            decoder=decoder
-        ).cuda()
-    elif model_name == "OldFusionNetwork":
+    if model_name == "OldFusionNetwork":
         model = OldFusionNetwork(
             cnn_model_cfg, 
             trans_model_cfg,
             cnn_pretrained=False,
             with_fusion=True,
+            with_aspp=False,
         ).cuda()
         if cnn_branch_checkpt is not None or trans_branch_checkpt is not None:
             # loading a checkpoint for a full model while having cnn checkpoint 
@@ -259,7 +239,6 @@ def main(
                 print(f'Loading Transformer checkpoint at path: {os.path.basename(trans_branch_checkpt)}')
                 checkpoint = torch.load(trans_branch_checkpt)
                 model.trans_branch.load_state_dict(checkpoint['model_state_dict'])
-
     elif model_name == "SimplestFusionNetwork":
         model = SimplestFusionNetwork(
             cnn_model_cfg, 
@@ -285,8 +264,6 @@ def main(
                 print(f'Loading Transformer checkpoint at path: {os.path.basename(trans_branch_checkpt)}')
                 checkpoint = torch.load(trans_branch_checkpt)
                 model.trans_branch.load_state_dict(checkpoint['model_state_dict'])
-
-
     elif model_name == "UNet_plain":
         model = UNet_plain(
             n_channels=3, 
@@ -305,17 +282,6 @@ def main(
             with_superficial=False,
             input_size = image_size[0],
         ).cuda()
-    elif model_name == "IDSNet":
-        raise ValueError(f'model_name: {model_name} bad, less than 0.1 iou')   
-    elif model_name == 'siddnet':
-        model = Stage1_IDSNet(
-            classes = n_cls,
-            p = 5, 
-            q = 3,
-            upsample2GTsize = True,
-        ).cuda()
-    elif model_name == 'mix_net_wopos':
-        model = mix_net_wopos(num_classes=n_cls).cuda()
     print(f'Model {model_name} loaded succesfully.')    
     ###########################################################################
 
@@ -330,7 +296,7 @@ def main(
             exit(1)
         model = torch.nn.DataParallel(model)
         model = model.cuda()
-        print(f'Making data parallel.')
+        print(f'Creating parallel training process. WARNING: This overwrites the model name and changes the name.')
 
     # optimzer stuffs 
     params = model.parameters()
@@ -437,6 +403,7 @@ def main(
         inferencer = InferenceModule(eps=0.0001, activation='0-1')
     elif n_cls == 2:
         inferencer = SegmentationMetrics(eps=1e-5, average=True, ignore_background=False, activation='sigmoid')
+        raise NotImplementedError(f'n_cls=2 never works, always gives terrible metrics results and doesnt train')
 
     loss_fn_params = dict()
     if loss_type == "weight":
@@ -452,6 +419,10 @@ def main(
         loss_fn = DiceLoss(nonlin='sigmoid')
     elif loss_type == "diceBCE":
         loss_fn = DiceBCELoss(nonlin='sigmoid')
+    elif loss_type == "focal_loss":
+        loss_fn = FocalLoss(nonlin='sigmoid')
+    elif loss_type == "tversky":
+        loss_fn = TverskyLoss(nonlin='sigmoid')
     else:
         raise NotImplementedError(f'Just put more elif structures in here.')
 

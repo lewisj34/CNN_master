@@ -6,10 +6,10 @@ from torchsummary import summary
 from timm.models.helpers import load_pretrained, load_custom_pretrained
 from timm.models.vision_transformer import default_cfgs
 
-from seg.model.segmenter.ViT import VisionTransformer
-from seg.model.segmenter.decoder import DecoderLinear, MaskTransformer
-from seg.model.segmenter.decoder_new import DecoderNew
-from seg.model.segmenter.utils import checkpoint_filter_fn, padding, unpadding
+from .ViT import VisionTransformer
+from .decoder import DecoderLinear, MaskTransformer
+from .decoder_new import DecoderNew
+from .utils import checkpoint_filter_fn, padding, unpadding
 
 def create_vit(model_cfg):
     model_cfg['d_ff'] = 4 * model_cfg['d_model']

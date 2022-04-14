@@ -5,6 +5,7 @@ import yaml
 import time
 
 from pathlib import Path
+from seg.model.transformer.create_model import create_transformer
 from seg.utils.data.generate_npy import split_and_convert_to_npyV2
 from seg.utils.err_codes import crop_err1, crop_err2, crop_err3,resize_err1, resize_err2, resize_err3
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
@@ -25,9 +26,9 @@ from seg.utils.dataset import get_TestDatasetV2, get_dataset
 from seg.utils.sched import WarmupPoly
 from engineV2 import train_one_epochV2
 
-ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS']
+ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS', 'CVC_ColonDB']
 ALLOWABLE_MODELS = ["OldFusionNetwork", "SimplestFusionNetwork", "UNet_plain", \
-    "UNet_backboned"]
+    "UNet_backboned", "just_trans"]
 ALLOWABLE_CNN_MODELS = ['unet']
 ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 
     'resnet152', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 
@@ -39,7 +40,7 @@ ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
 
 @click.command(help='')
 @click.option('--dataset', type=str, default='kvasir')
-@click.option('--model_name', type=str, default='trans') 
+@click.option('--model_name', type=str, default='OldFusionNetwork') 
 @click.option('--backbone', type=str, default='vit_base_patch16_384')
 @click.option('--decoder', type=str, default='linear')
 @click.option('--cnn_model_name', type=str, default='unet')
@@ -277,11 +278,13 @@ def main(
             cnn_model_cfg['num_classes'], 
             cnn_model_cfg['patch_size'], 
             cnn_model_cfg['backbone'], 
-            pretrained=True,
+            pretrained=False,
             with_attention=False,
             with_superficial=False,
             input_size = image_size[0],
         ).cuda()
+    elif model_name == 'just_trans':
+        model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     print(f'Model {model_name} loaded succesfully.')    
     ###########################################################################
 

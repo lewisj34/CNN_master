@@ -4,7 +4,23 @@ import torchvision
 
 from .CNN_parts import DoubleConv, Down, Up, OutConv, DownASPP
 from torchsummary import summary 
+from timm.models.layers import trunc_normal_
 
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        trunc_normal_(m.weight, std=0.02)
+        if isinstance(m, nn.Linear) and m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Conv2d):
+        trunc_normal_(m.weight, std=0.02)
+        if isinstance(m, nn.Conv2d) and m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.LayerNorm):
+        nn.init.constant_(m.bias, 0)
+        nn.init.constant_(m.weight, 1.0)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.bias, 0)
+        nn.init.constant_(m.weight, 1.0)
 
 class CNN_BRANCH(nn.Module):
     def __init__(self, n_channels, n_classes, patch_size, use_ASPP=False, bilinear=True):
@@ -43,6 +59,9 @@ class CNN_BRANCH(nn.Module):
 
         self.outc = OutConv(64, n_classes)
 
+        print(f'Initializing weights...')
+        self.apply(init_weights)
+
     def forward(self, x):       # [1, 3, 256, 256]      [1, 3, 512, 512]        
         x1 = self.inc(x);       # [1, 64, 256, 256]     [1, 64, 512, 512]  
         x2 = self.down1(x1);    # [1, 128, 128, 128]    [1, 128, 256, 256]  
@@ -67,11 +86,11 @@ class CNN_BRANCH(nn.Module):
             if self.patch_size == 32:
                 print(f'self.x_1_32.shape: {self.x_1_32.shape}')
                 
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
-        logits = self.outc(x) 
+        x = self.up1(x5, x4) #; print(f'output up1, x.shape: {x.shape}')
+        x = self.up2(x, x3) #; print(f'output up2, x.shape: {x.shape}')
+        x = self.up3(x, x2) #; print(f'output up3, x.shape: {x.shape}')
+        x = self.up4(x, x1) #; print(f'output up4, x.shape: {x.shape}')
+        logits = self.outc(x) #; print(f'output outc, x.shape: {logits.shape}')
         return logits
 
     def get_dimensions(self, N_in, C_in, H_in, W_in, printXDimensions=True):
@@ -111,8 +130,10 @@ class Conv(nn.Module):
 
 if __name__ == '__main__':
     model = CNN_BRANCH(3, 1, 16, True)
+    for i in model.children():
+        print(i)
     from torchsummary import summary 
     N, C, H, W = 2, 3, 256, 256
-    summary(model.cuda(), input_size=(C, H, W), batch_size=N)
+    # summary(model.cuda(), input_size=(C, H, W), batch_size=N)
 
     # dim_list = model.get_dimensions(N, C, H, W)

@@ -89,3 +89,16 @@ class OutConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
+if __name__ == '__main__':
+    model = Up(
+        in_channels = 64, 
+        out_channels = 100, 
+    )
+
+    from torchsummary import summary 
+    summary(
+        model = model.cuda(), 
+        input_size = (64, 128, 128),
+        batch_size = 10
+    )

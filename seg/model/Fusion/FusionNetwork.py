@@ -85,7 +85,8 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
 
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)
-        x_final_trans = self.trans_branch(images)
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+
         '''
         self.CNN_BRANCH and self.TRANSFORMER_BRANCH should have same members:
                 { output_1_4, output_1_2 }

@@ -503,9 +503,14 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
         parent_dir = '/home/john/Documents/Datasets/CVC-ClinicDB/PNG'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'ETIS':
-        # assert os.path.isdir(parent_dir)
-        raise NotImplementedError(f'dataset: {dataset} not set up yet.')
-    
+        parent_dir = '/home/john/Documents/Datasets/ETIS'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+    elif dataset == 'CVC_ColonDB':
+        parent_dir = '/home/john/Documents/Datasets/CVC-ColonDB'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+    else:
+        raise NotImplementedError(f'Dataset: {dataset} not implemented.')    
+        
     TRAIN_SPLIT_PATH = parent_dir + "/splits/" + "train.txt"
     VALID_SPLIT_PATH = parent_dir + "/splits/" + "valid.txt"
     TEST_SPLIT_PATH = parent_dir + "/splits/" + "test.txt"    
@@ -581,6 +586,9 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
             crop_size = crop_size,
             image_size = image_size,
         )
+
+        print(f'exiting..')
+        exit(1)
     ########################################################################
     # DEFUNCT BELOW THIS LINE. JUST WAS GETTING US WHAT WE NEEDED IN TERMS OF 
     # CROP AND STUFF SO THAT WE COULD FINALIZE process_dataset(...)

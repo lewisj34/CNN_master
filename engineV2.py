@@ -179,9 +179,9 @@ def train_one_epochV2(
             meanValidLoss, meanValidIoU, meanValidDice  = inference_multi_class(model, valid_loader, inferencer, loss_fn, 'valid')
             meanTestLoss, meanTestIoU, meanTestDice = inference_multi_class(model, test_loader, inferencer, loss_fn, 'test')         
 
-        if meanTestLoss < best_loss:
-            print('New best loss: ', meanTestLoss)
-            best_loss = meanTestLoss
+        if meanTestLoss.item() < best_loss:
+            print('New best loss: ', meanTestLoss.item())
+            best_loss = meanTestLoss.item()
             
             # old version for saving 
             # torch.save(model.state_dict(), checkpoint_path + f'{model_checkpoint_name}-%d.pth' % curr_epoch) 
@@ -203,7 +203,7 @@ def train_one_epochV2(
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 # 'learning_rate': learning_rate,
-                'loss': meanTestLoss,
+                'loss': meanTestLoss.item(),
             }, checkpt_save_dir + f'{model_checkpoint_name}-%d.pth' % curr_epoch)
 
             print('Saving checkpoint to: ', 
@@ -219,4 +219,4 @@ def train_one_epochV2(
                 num_iters=10000
             )
 
-    return best_loss, meanTestLoss, meanTestIoU, meanTestDice, meanValidLoss, meanValidIoU, meanValidDice
+    return best_loss, meanTestLoss.item(), meanTestIoU.item(), meanTestDice.item(), meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()

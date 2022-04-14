@@ -8,7 +8,7 @@ from timm.models.vision_transformer import default_cfgs
 
 from .ViT import VisionTransformer
 from .decoder import DecoderLinear, MaskTransformer
-from .decoder_new import DecoderNew
+from .decoder_new import DecoderPlus
 from .utils import checkpoint_filter_fn, padding, unpadding
 
 def create_vit(model_cfg):
@@ -78,6 +78,18 @@ class Transformer(nn.Module):
         self.patch_size = encoder.patch_size
         self.encoder = encoder
         self.decoder = decoder
+        
+        # manually put in params for this, would need modification for diff
+        # input sizes other than a patch size of 16x16, and an output size of 
+        # 256x256
+        self.use_decoderPlus = True
+        print(f'Using decoderPlus: ', self.use_decoderPlus)
+        self.decoderPlus = DecoderPlus(
+            input_size=(16,16), 
+            output_size=(256,256),
+            inter_chans=32,
+            out_chans=1
+        )
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -100,7 +112,6 @@ class Transformer(nn.Module):
         num_extra_tokens = 1 + self.encoder.distilled
         x = x[:, num_extra_tokens:]
 
-        # print(f'output of encoder: {x.shape}')
 
         # input to decoder: torch.Size([16, 256, 768])
         # output to decoder is always going to be H_orig (or W_orig) // 16 
@@ -144,7 +155,10 @@ class Transformer(nn.Module):
                 print(f'self.x_1_32.shape: {self.x_1_32.shape}')
                 print(f'patch_size: {self.patch_size}')
 
-        masks = F.interpolate(masks, size=(H, W), mode="bilinear") # output: torch.Size([16, 1, 256, 256])
+        if self.use_decoderPlus:
+            masks = self.decoderPlus(masks)
+        else:
+            masks = F.interpolate(masks, size=(H, W), mode="bilinear") # output: torch.Size([16, 1, 256, 256])
         masks = unpadding(masks, (H_ori, W_ori)) # output: torch.Size([16, 1, 256, 256])
         return masks
 

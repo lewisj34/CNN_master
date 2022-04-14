@@ -66,8 +66,8 @@ class Attention(nn.Module):
             qkv[2],
         )
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
+        attn = (q @ k.transpose(-2, -1)) * self.scale #; print(f'\tattn.shape: {attn.shape}')
+        attn = attn.softmax(dim=-1) #; print(f'\tattn.shape: {attn.shape}')
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)

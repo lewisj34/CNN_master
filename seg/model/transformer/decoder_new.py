@@ -5,128 +5,85 @@ from einops import rearrange
 from .blocks import Block
 from .utils import init_weights
 
-class DecoderNew(nn.Module):
-    def __init__(
-        self, 
-        num_classes, 
-        patch_size, 
-        d_model,
-    ):
+from seg.model.CNN.CNN_parts import Up, DoubleConv, OutConv
+import torch.nn.functional as F
+
+class UpMod(nn.Module):
+    """Upscaling but with modifiable scale_factor  then double conv"""
+    def __init__(self, in_channels, out_channels, bilinear=True, scale_factor=2):
         super().__init__()
-        self.num_classes = num_classes
-        self.patch_size = patch_size 
-        self.d_model = d_model
+        # if bilinear, use the normal convolutions to reduce the number of channels
+        if bilinear:
+            self.up = nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
+            self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
 
-        self.head1 = nn.Linear(self.d_model, 256)
-        # self.head2 = nn.Linear(256, 256 * 256)
-        # self.head3 = nn.Linear(self.d_model // 4, self.num_classes)
-        # self.conv1 = nn.ConvTranspose1d(
-        #     in_channels=self.d_model // 8,
-        #     out_channels=self.d_model // 4,
-        #     kernel_size=1,
-        # )
-        # # self.conv2 = nn.Conv1d(
-        # #     in_channels = self.d_model // 4,
-        # #     out_channels = 256 ** 2,
-        # #     kernel_size = 256,
-        # # )
-        # self.conv2 = nn.ConvTranspose1d(
-        #     in_channels=self.d_model // 4,
-        #     out_channels=self.d_model // 2,
-        #     kernel_size=3,
-        # )
-        # self.conv3 = nn.ConvTranspose1d(
-        #     in_channels=self.d_model // 2,
-        #     out_channels=self.d_model,
-        #     kernel_size=3,
-        # )
+    def forward(self, x1, x2=None):
+        x1 = self.up(x1)
+        # input is CHW
+        if x2 is not None:
+            diffY = x2.size()[2] - x1.size()[2]
+            diffX = x2.size()[3] - x1.size()[3]
 
+            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                            diffY // 2, diffY - diffY // 2])
+            x = torch.cat([x2, x1], dim=1)
+        else:
+            x = x1
+        return self.conv(x)
 
-        # self.head_out = nn.Linear(self.d_model // 2, self.num_classes)
-
-
-
-        self.apply(init_weights)
-
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return set()
-
-    def forward(self, x, im_size):
-        H, W = im_size
-        GS = H // self.patch_size
-
-        x = self.head1(x); 
-        x = torch.unsqueeze(x, 1); 
-        # x = self.head2(x); print(f'x.shape: {x.shape}')
-        # x = self.head2(x); print(f'x.shape: {x.shape}')
-        # x = self.head3(x); print(f'x.shape: {x.shape}')
-        # x = rearrange(x, 'b (h w) c -> b c h w', h = 256); print(f'x.shape: {x.shape}')
-
-        # x = self.head1(x); print(f'x.shape: {x.shape}')
-        # x = torch.transpose(x, 1, 2)
-        # x = self.conv1(x); print(f'x.shape: {x.shape}')
-        # x = self.conv2(x); print(f'x.shape: {x.shape}')
-        # x = torch.transpose(x, 2, 1); print(f'x.shape: {x.shape}')
-        # x = self.conv3(x); print(f'x.shape: {x.shape}')
-
-        # x = self.head_out(x); print(f'x.shape: {x.shape}') 
-        # x = rearrange(x, "b (h w) c -> b c h w", h=GS)
-        return x
-
-class DecoderNewFull(nn.Module):
+class DecoderPlus(nn.Module):
     def __init__(
-        self, 
-        num_classes, 
-        patch_size, 
-        d_model,
+        self,
+        input_size=(16, 16),
+        output_size=(256, 256),
+        inter_chans=32,
+        out_chans=1,
     ):
-        super().__init__()
-        self.num_classes = num_classes
-        self.patch_size = patch_size 
-        self.d_model = d_model
+        super(DecoderPlus, self).__init__()
+        assert input_size == (16, 16), \
+            f'input_size must be corresponding to [N, 1, 16, 16]' 
+            # haven't done for [N, 1, 32, 32] yet
 
-        self.head1 = nn.Linear(self.d_model, self.d_model // 2)
-        self.head2 = nn.Linear(self.d_model // 2, self.d_model // 4)
-        self.head3 = nn.Linear(self.d_model // 4, self.d_model // 8)
-        self.head_out = nn.Linear(self.d_model // 8, self.num_classes)
-
-        # self.head = nn.Linear(self.d_model, num_classes)
-        self.apply(init_weights)
-
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return set()
-
-    def forward(self, x, im_size):
-        H, W = im_size
-        GS = H // self.patch_size
-        x = self.head1(x)
-        x = self.head2(x)
-        x = self.head3(x)
-        x = self.head_out(x) 
-        x = rearrange(x, "b (h w) c -> b c h w", h=GS)
-        return x
+        self.output_size = output_size
+        self.up1 = UpMod(
+            in_channels = 1, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+        )
+        self.up2 = UpMod(
+            in_channels = inter_chans, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+        )
+        self.conv = nn.Conv2d(inter_chans, out_chans, kernel_size=1)
+        self.final_conv = nn.Conv2d(2, 1, kernel_size=1)
+    def forward(self, x):
+        x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
+        x = self.up1(x)
+        x = self.up2(x)
+        x = self.conv(x)
+        x = torch.cat([x, x_final_dec], dim=1)
+        x = self.final_conv(x)
+        return x 
 
 
 
 if __name__ == '__main__':
-    # standard givens or model relationships     
-    im_size = (256, 256)
-    patch_size = 16
-    d_model = 768 
+    input = (1, 16, 16)
+    batch_size = 5
 
-    num_patches = im_size[0] // patch_size * im_size[1] // patch_size 
+    from torchsummary import summary 
+    model = DecoderPlus(
+        input_size=(16,16),
+        output_size=(256,256),
+        inter_chans=32, 
+        out_chans=1
+    )
 
-    # test new deocder out 
-    x = torch.rand(2, num_patches, d_model)
-    print(f'Test input shape to new decoder : {x.shape}')
-
-    model = DecoderNew(
-        num_classes = 1, 
-        patch_size = patch_size, 
-        d_model = d_model,
-    ).cuda()
-
-    model.forward(x = x.cuda(), im_size = im_size)
-
+    summary(
+        model=model.cuda(),
+        input_size=input,
+        batch_size=batch_size
+    )

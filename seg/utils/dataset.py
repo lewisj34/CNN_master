@@ -127,6 +127,119 @@ class CVC_ClinicDB_Dataset(data.Dataset):
     def __len__(self):
         return self.size
 
+class CVC_ColonDB_Dataset(data.Dataset):
+    """
+    Dataset for the CVC_ClinicDB polyp data
+    """
+    def __init__(self, image_root, gt_root, normalization="deit"):
+        self.images = np.load(image_root)
+        self.gts = np.load(gt_root)
+
+        assert len(self.images) == len(self.gts) 
+        self.size = len(self.images)
+
+        # print("Using normalization: ", normalization)
+
+        if normalization == "vit":
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5],
+                                    [0.5, 0.5, 0.5])
+                ]) 
+        elif normalization == "deit":
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406],
+                                    [0.229, 0.224, 0.225])
+                ])
+        else:
+            print("Error: Normalization used: ", normalization)
+            raise ValueError("Normalization can only be vit or deit")
+
+
+
+        self.gt_transform = transforms.Compose([
+            transforms.ToTensor()])
+        
+        self.transform = A.Compose(
+            [
+                A.ShiftScaleRotate(shift_limit=0.15, scale_limit=0.15, \
+                    rotate_limit=25, p=0.5, border_mode=0),
+                A.ColorJitter(),
+                A.HorizontalFlip(),
+                A.VerticalFlip()
+            ]
+        )
+
+    def __getitem__(self, index):
+        image = self.images[index]
+        gt = self.gts[index]
+        gt = gt/255.0
+
+        transformed = self.transform(image=image, mask=gt)
+        image = self.img_transform(transformed['image'])
+        gt = self.gt_transform(transformed['mask'])
+        return image, gt
+
+    def __len__(self):
+        return self.size
+
+class ETIS_dataset(data.Dataset):
+    """
+    Dataset for the ETIS polyp data
+    """
+    def __init__(self, image_root, gt_root, normalization="deit"):
+        self.images = np.load(image_root)
+        self.gts = np.load(gt_root)
+
+        assert len(self.images) == len(self.gts) 
+        self.size = len(self.images)
+
+        # print("Using normalization: ", normalization)
+
+        if normalization == "vit":
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5],
+                                    [0.5, 0.5, 0.5])
+                ]) 
+        elif normalization == "deit":
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406],
+                                    [0.229, 0.224, 0.225])
+                ])
+        else:
+            print("Error: Normalization used: ", normalization)
+            raise ValueError("Normalization can only be vit or deit")
+
+
+
+        self.gt_transform = transforms.Compose([
+            transforms.ToTensor()])
+        
+        self.transform = A.Compose(
+            [
+                A.ShiftScaleRotate(shift_limit=0.15, scale_limit=0.15, \
+                    rotate_limit=25, p=0.5, border_mode=0),
+                A.ColorJitter(),
+                A.HorizontalFlip(),
+                A.VerticalFlip()
+            ]
+        )
+
+    def __getitem__(self, index):
+        image = self.images[index]
+        gt = self.gts[index]
+        gt = gt/255.0
+
+        transformed = self.transform(image=image, mask=gt)
+        image = self.img_transform(transformed['image'])
+        gt = self.gt_transform(transformed['mask'])
+        return image, gt
+
+    def __len__(self):
+        return self.size
 
 def get_dataset(
     dataset,
@@ -153,6 +266,22 @@ def get_dataset(
                                     shuffle=shuffle,
                                     num_workers=num_workers,
                                     pin_memory=pin_memory)    
+    elif dataset == "ETIS":
+        dataset = ETIS_dataset(image_root, gt_root, 
+            normalization=normalization)
+        data_loader = data.DataLoader(dataset=dataset,
+                                    batch_size=batchsize,
+                                    shuffle=shuffle,
+                                    num_workers=num_workers,
+                                    pin_memory=pin_memory)  
+    elif dataset == "CVC_ColonDB":
+        dataset = CVC_ColonDB_Dataset(image_root, gt_root, 
+            normalization=normalization)
+        data_loader = data.DataLoader(dataset=dataset,
+                                    batch_size=batchsize,
+                                    shuffle=shuffle,
+                                    num_workers=num_workers,
+                                    pin_memory=pin_memory) 
     else:
         print("Error: Only Kvasir dataset supported at this time")
         sys.exit(1)

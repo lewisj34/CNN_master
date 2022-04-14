@@ -193,13 +193,14 @@ class MiniEncoderFuse(nn.Module):
         assert(x_CNN.shape[0] == x_TRANS.shape[0] 
             and x_CNN.shape[2] == x_TRANS.shape[2] 
             and x_CNN.shape[3] == x_TRANS.shape[3])
-        x = torch.cat([x_CNN, x_TRANS], dim=1)
-        x = self.down1(x)
+            
+        x = torch.cat([x_CNN, x_TRANS], dim=1) #; print(f'\tcat output {x.shape}')
+        x = self.down1(x) #; print(f'\tdown1 output {x.shape}')
         # x = self.super1(x)
-        x = self.down2(x)
-        x = self.up1(x)
+        x = self.down2(x) #; print(f'\tdown2 output {x.shape}')
+        x = self.up1(x) #; print(f'\tup1 output {x.shape}')
         # x = self.super2(x)
-        x = self.up2(x)
+        x = self.up2(x) #; print(f'\tup2 output {x.shape}')
         seg_map = F.interpolate(
             x, 
             scale_factor = self.scale_factor, 
@@ -208,11 +209,11 @@ class MiniEncoderFuse(nn.Module):
 
 
 if __name__ == '__main__':
-    fuse_1_2 = MiniEncoderFuse(256, 64, 64, 1, fraction=0.5)
-    fuse_1_4 = MiniEncoderFuse(256, 64, 64, 1, fraction=0.25)
-    fuse_1_8 = MiniEncoderFuse(512, 128, 64, 1, fraction=0.125)
+    fuse_1_2 = MiniEncoderFuse(256, 64, 64, 1, stage='1_2')
+    # fuse_1_4 = MiniEncoderFuse(256, 64, 64, 1, fraction=0.25)
+    # fuse_1_8 = MiniEncoderFuse(512, 128, 64, 1, fraction=0.125)
 
     from torchsummary import summary 
     summary(fuse_1_2, [(256, 96, 128), (64, 96, 128)], batch_size=2, device='cpu')
-    summary(fuse_1_4, [(256, 48, 64), (64, 48, 64)], batch_size=2, device='cpu')
-    summary(fuse_1_8, [(512, 24, 32), (128, 24, 32)], batch_size=2, device='cpu')
+    # summary(fuse_1_4, [(256, 48, 64), (64, 48, 64)], batch_size=2, device='cpu')
+    # summary(fuse_1_8, [(512, 24, 32), (128, 24, 32)], batch_size=2, device='cpu')

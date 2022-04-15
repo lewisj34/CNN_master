@@ -36,32 +36,26 @@ def create_vit(model_cfg):
 
     return model 
 
-def create_decoder(encoder, decoder_cfg):
+def create_decoder(encoder, decoder_cfg, branch=''):
     decoder_cfg = decoder_cfg.copy()
     name = decoder_cfg.pop("name")
     decoder_cfg["d_encoder"] = encoder.d_model
     decoder_cfg["patch_size"] = encoder.patch_size
 
     if "linear" in name:
-        decoder = DecoderLinear(
-            n_cls = decoder_cfg['n_cls'], 
-            patch_size = decoder_cfg['patch_size'], 
-            d_encoder = decoder_cfg['d_encoder']
-        )
-    elif name == "progressive":
-        print(f'Decoder used: DecoderNew')
-        decoder = DecoderNew(
-            num_classes = decoder_cfg['n_cls'],
-            patch_size = decoder_cfg['patch_size'],
-            d_model = decoder_cfg['d_model'],
-        )
-    elif name == "mask_transformer":
-        dim = encoder.d_model
-        n_heads = dim // 64
-        decoder_cfg["n_heads"] = n_heads
-        decoder_cfg["d_model"] = dim
-        decoder_cfg["d_ff"] = 4 * dim
-        decoder = MaskTransformer(**decoder_cfg)
+        if branch == 'fusion':
+            print("fusion decoder")
+            decoder = DecoderLinear(
+                n_cls = decoder_cfg['n_cls'] + 31, 
+                patch_size = decoder_cfg['patch_size'], 
+                d_encoder = decoder_cfg['d_encoder']
+            )
+        else:
+            decoder = DecoderLinear(
+                n_cls = decoder_cfg['n_cls'], 
+                patch_size = decoder_cfg['patch_size'], 
+                d_encoder = decoder_cfg['d_encoder']
+            )
     else:
         raise ValueError(f"Unknown decoder: {name}")
     return decoder

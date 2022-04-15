@@ -508,6 +508,11 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
     elif dataset == 'CVC_ColonDB':
         parent_dir = '/home/john/Documents/Datasets/CVC-ColonDB'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+    elif dataset == 'master':
+        parent_dir = '/home/john/Documents/Datasets/master_polyp'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        print(f'Using master dataset.')
+        exit(1)
     else:
         raise NotImplementedError(f'Dataset: {dataset} not implemented.')    
         

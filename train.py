@@ -26,7 +26,7 @@ from seg.utils.dataset import get_TestDatasetV2, get_dataset
 from seg.utils.sched import WarmupPoly
 from engineV2 import train_one_epochV2
 
-ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS', 'CVC_ColonDB']
+ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS', 'CVC_ColonDB', 'master']
 ALLOWABLE_MODELS = ["OldFusionNetwork", "SimplestFusionNetwork", "UNet_plain", \
     "UNet_backboned", "just_trans"]
 ALLOWABLE_CNN_MODELS = ['unet']

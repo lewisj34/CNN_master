@@ -378,6 +378,30 @@ def main(
     logging.basicConfig(filename=f'{model_dir}/LOG.log', level=logging.INFO, format='%(message)s')
     logging.info(f'model_dir: {model_dir}')
 
+    # save details of training into yaml config file in results dir 
+    total_model = {
+        "dataset": dataset,
+        "actual_model": model._get_name(),
+        "model_name": model_name,
+        "final_image_height": image_size[0],
+        "final_image_width": image_size[1],
+
+        "dropout": dropout,
+        "drop_path_rate": drop_path_rate,
+        "num_classes": n_cls,
+        "batch_size": batch_size,
+        "learning_rate": learning_rate,
+        "lr_sched": lr_sched,
+        "loss_type": loss_type,
+
+        "trans_model_cfg": trans_model_cfg,
+        "cnn_model_cfg": cnn_model_cfg,
+    }
+    logging.info(total_model)    
+    results_file = open(f"{model_dir}/final_config.yml", "w")
+    yaml.dump(total_model, results_file)
+    results_file.close()
+
     checkpt_save_dir = model_dir + '/current_checkpoints/' 
     if not os.path.exists(checkpt_save_dir):
         os.mkdir(checkpt_save_dir)
@@ -556,30 +580,6 @@ def main(
             end = time.time()
             print('Time per epoch: {:.4f} (s)\n'.format(end - start))    
             logging.info('Time per epoch: {:.4f} (s)\n'.format(end - start)) 
-
-
-    # save details of training into yaml config file in results dir 
-    total_model = {
-        "dataset": dataset,
-        "actual_model": model._get_name(),
-        "model_name": model_name,
-        "final_image_height": image_size[0],
-        "final_image_width": image_size[1],
-
-        "dropout": dropout,
-        "drop_path_rate": drop_path_rate,
-        "num_classes": n_cls,
-        "batch_size": batch_size,
-        "learning_rate": learning_rate,
-        "lr_sched": lr_sched,
-        "loss_type": loss_type,
-
-        "trans_model_cfg": trans_model_cfg,
-        "cnn_model_cfg": cnn_model_cfg,
-    }        
-    results_file = open(f"{model_dir}/final_config.yml", "w")
-    yaml.dump(total_model, results_file)
-    results_file.close()
 
     if dataset != 'master':
         plot_test_valid_loss(

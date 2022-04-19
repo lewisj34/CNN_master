@@ -588,7 +588,8 @@ def split_and_convert_to_npyV2(
     crop_size = (None, None),
     image_size = (256, 256),
     reimport_data = False, 
-    num_classes = 2,
+    num_classes = 1,
+    parent_dir = None,
 ):
     """
     @dataset: type of dataset
@@ -599,6 +600,7 @@ def split_and_convert_to_npyV2(
     @reimport_data: whether to reimport the data or not
     @num_classes: import masks with chan dim == num_classes and therefore: 
         num_chans = 2 or 1, 'new' = num_classes = 2, 'old' = num_classes = 1
+    @parent_dir: the directory that holds the image data w/ images/annotations
     """
 
     assert num_classes == 1 or num_classes == 2, \
@@ -679,19 +681,24 @@ def split_and_convert_to_npyV2(
                 params = yaml.dump(model_params, file)
 
     if dataset == 'kvasir':
-        parent_dir = '/home/john/Documents/Datasets/kvasir_merged'
+        if parent_dir is None:
+            parent_dir = '/home/john/Documents/Datasets/kvasir_merged'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'CVC_ClinicDB':
-        parent_dir = '/home/john/Documents/Datasets/CVC-ClinicDB/PNG'
+        if parent_dir is None:    
+            parent_dir = '/home/john/Documents/Datasets/CVC-ClinicDB/PNG'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'ETIS':
-        parent_dir = '/home/john/Documents/Datasets/ETIS'
+        if parent_dir is None:
+            parent_dir = '/home/john/Documents/Datasets/ETIS'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'CVC_ColonDB':
-        parent_dir = '/home/john/Documents/Datasets/CVC-ColonDB'
+        if parent_dir is None:
+            parent_dir = '/home/john/Documents/Datasets/CVC-ColonDB'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     elif dataset == 'master':
-        parent_dir = '/home/john/Documents/Datasets/master_polyp'
+        if parent_dir is None:
+            parent_dir = '/home/john/Documents/Datasets/master_polyp'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     else:
         raise NotImplementedError(f'Dataset: {dataset} not implemented.')    

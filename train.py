@@ -397,7 +397,9 @@ def main(
         "trans_model_cfg": trans_model_cfg,
         "cnn_model_cfg": cnn_model_cfg,
     }
-    logging.info(total_model)    
+    for k, v in total_model.items():
+        logging.info(f'{k}: {v}')
+    logging.info('\n')
     results_file = open(f"{model_dir}/final_config.yml", "w")
     yaml.dump(total_model, results_file)
     results_file.close()

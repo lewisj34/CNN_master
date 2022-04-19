@@ -1,3 +1,5 @@
+import logging
+import numpy as np
 import torch
 import time 
 
@@ -7,6 +9,7 @@ from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.tversky import TverskyLoss
 from seg.utils.inferenceV2 import inference, inference_multi_class
+from seg.utils.inference_func_master import inference_master
 from seg.utils.soft_dice_loss import SoftDiceLoss
 
 from seg.utils.utils import AvgMeter
@@ -29,6 +32,7 @@ def speed_testing(model, input_height, input_width, device_id=0, num_iters=10000
     torch.backends.cudnn.deterministic = True
 
     print('\n[SPEED EVAL]: Evaluating speed of model...')
+    logging.info('\n[SPEED EVAL]: Evaluating speed of model...')
     model = model.to('cuda:{}'.format(device_id))
     random_input = torch.randn(1, 3, input_height, input_width).to('cuda:{}'.format(device_id))
 
@@ -48,6 +52,11 @@ def speed_testing(model, input_height, input_width, device_id=0, num_iters=10000
     print(f'[SPEED EVAL]: Total time elapsed {sum(time_list) / 60} mins')
     print(f'[SPEED EVAL]: Average time per iter {sum(time_list)/num_iters} sec')
     print('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/10000)))
+
+    logging.info(f'[SPEED EVAL]: Completed {num_iters} iterations of inference')
+    logging.info(f'[SPEED EVAL]: Total time elapsed {sum(time_list) / 60} mins')
+    logging.info(f'[SPEED EVAL]: Average time per iter {sum(time_list)/num_iters} sec')
+    logging.info('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/10000)))
     # print("\tTotal time cost: {}s".format(sum(time_list)))
     # print("\t     + Average time cost: {}s".format(sum(time_list)/10000))
     # print("\t     + Frame Per Second: {:.2f}".format(1/(sum(time_list)/10000)))
@@ -72,6 +81,8 @@ def train_one_epochV2(
     loss_fn=None,
     loss_fn_params=None,
     eps=0.001,
+    dataset='master', # only used to initiate what kind of test metric function is called
+    best_loss_index=5,
     ):
     '''
     Trains model for one epoch.
@@ -89,6 +100,14 @@ def train_one_epochV2(
         @data_dir: directory where train, valdiation, and test data are 
         @speed_test: whether it runs speeding tests or not to measure FPS
         @scheduler: learning rate scheduler 
+        @dataset: name of dataset, only used to initiate the right infer. call
+        @best_loss_index: only applies to master. Which testset 2 use 4 infer. 
+            B/c we have 5 test sets that we measure model accuracy on, we can 
+            theoretically take our best loss with respect to any one of them. 
+            Will apply to the later determined test_loss_matrix (5 x 3) and det.
+            with which to take the best loss from. Index is between 0 and 5, 
+            and corresponds to the following list:    
+            ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir', 'ALL']
     '''
     model.train()
     loss_record = AvgMeter()
@@ -163,6 +182,10 @@ def train_one_epochV2(
                   'LOSS: {:.4f} \t LR: {:.4e}'.  
                   format(curr_epoch, total_epochs, i, len(train_loader),
                          loss_record.show(), learning_rate))
+            logging.info('EPOCH: [{:03d}/{:03d}] \t STEP: [{:04d}/{:04d}] \t '
+                  'LOSS: {:.4f} \t LR: {:.4e}'.  
+                  format(curr_epoch, total_epochs, i, len(train_loader),
+                         loss_record.show(), learning_rate))
 
     if model_checkpoint_name is None:
         model_checkpoint_name = model._get_name()
@@ -171,52 +194,117 @@ def train_one_epochV2(
 
     # os.makedirs(checkpoint_path, exist_ok=True)
 
-    if (curr_epoch+1) % 1 == 0:
-        if num_classes == 1:
-            meanValidLoss, meanValidIoU, meanValidDice  = inference(model, valid_loader, inferencer, loss_fn, 'valid')
-            meanTestLoss, meanTestIoU, meanTestDice = inference(model, test_loader, inferencer, loss_fn, 'test')
-        elif num_classes == 2:
-            meanValidLoss, meanValidIoU, meanValidDice  = inference_multi_class(model, valid_loader, inferencer, loss_fn, 'valid')
-            meanTestLoss, meanTestIoU, meanTestDice = inference_multi_class(model, test_loader, inferencer, loss_fn, 'test')         
+    # old version: where we only need to return the individual tensors for a 
+    # single test set (not across multiple different tests lets loaded into 
+    # different dataloaders)
+    if dataset != 'master': 
+        if (curr_epoch+1) % 1 == 0:
+            if num_classes == 1:
+                meanValidLoss, meanValidIoU, meanValidDice  = inference(model, valid_loader, inferencer, loss_fn, 'valid')
+                meanTestLoss, meanTestIoU, meanTestDice = inference(model, test_loader, inferencer, loss_fn, 'test')
+            elif num_classes == 2:
+                meanValidLoss, meanValidIoU, meanValidDice  = inference_multi_class(model, valid_loader, inferencer, loss_fn, 'valid')
+                meanTestLoss, meanTestIoU, meanTestDice = inference_multi_class(model, test_loader, inferencer, loss_fn, 'test')         
 
-        if meanTestLoss.item() < best_loss:
-            print('New best loss: ', meanTestLoss.item())
-            best_loss = meanTestLoss.item()
-            
-            # old version for saving 
-            # torch.save(model.state_dict(), checkpoint_path + f'{model_checkpoint_name}-%d.pth' % curr_epoch) 
-            
-            # new version where we try to save epoch info and other stuff
-            # note in our updated code below, we DONT save the 'learning_rate', 
-            # this isn't actually necessary as it stands right now (i.e. w/o the
-            # learning rate scheduler), because the updated learning rate is 
-            # saved in the optimizer.state_dict(), which can be accessed by the
-            # following snippet of code: `lr = optimizer.param_groups[0]['lr']`
-            # what I'm concerned about is when we input the scheduler into this 
-            # code, what is going to happen, will the learning rate be the same? 
-            # the code above should do that, but if they are different i think 
-            # it would be better to save the learning rate from the lr scheduler
-            # if they are not the same... 
-            torch.save({
-                'epoch': curr_epoch,
-                'model_name': model._get_name(),
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                # 'learning_rate': learning_rate,
-                'loss': meanTestLoss.item(),
-            }, checkpt_save_dir + f'{model_checkpoint_name}-%d.pth' % curr_epoch)
+            if meanTestLoss.item() < best_loss:
+                print('New best loss: ', meanTestLoss.item())
+                logging.info(f'New best loss: {meanTestLoss.item()}')
+                best_loss = meanTestLoss.item()
+                
+                # old version for saving 
+                # torch.save(model.state_dict(), checkpoint_path + f'{model_checkpoint_name}-%d.pth' % curr_epoch) 
+                
+                # new version where we try to save epoch info and other stuff
+                # note in our updated code below, we DONT save the 'learning_rate', 
+                # this isn't actually necessary as it stands right now (i.e. w/o the
+                # learning rate scheduler), because the updated learning rate is 
+                # saved in the optimizer.state_dict(), which can be accessed by the
+                # following snippet of code: `lr = optimizer.param_groups[0]['lr']`
+                # what I'm concerned about is when we input the scheduler into this 
+                # code, what is going to happen, will the learning rate be the same? 
+                # the code above should do that, but if they are different i think 
+                # it would be better to save the learning rate from the lr scheduler
+                # if they are not the same... 
+                torch.save({
+                    'epoch': curr_epoch,
+                    'model_name': model._get_name(),
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    # 'learning_rate': learning_rate,
+                    'loss': meanTestLoss.item(),
+                }, checkpt_save_dir + f'{model_checkpoint_name}-%d.pth' % curr_epoch)
 
-            print('Saving checkpoint to: ', 
-                checkpt_save_dir + f'{model_checkpoint_name}-%d.pth'% curr_epoch, "\n")
+                print('Saving checkpoint to: ', 
+                    checkpt_save_dir + f'{model_checkpoint_name}-%d.pth'% curr_epoch, "\n")
+                checkpt_save_file = checkpt_save_dir + f'{model_checkpoint_name}-%d.pth'% curr_epoch
+                logging.info(f'Saving checkpoint to: {checkpt_save_file}')
 
-    if speed_test:
-        if (curr_epoch+1) % 5 == 0: 
-            speed_testing(
-                model, 
-                images.shape[2], 
-                images.shape[3], 
-                device_id=0, 
-                num_iters=10000
+        if speed_test:
+            if (curr_epoch+1) % 5 == 0: 
+                speed_testing(
+                    model, 
+                    images.shape[2], 
+                    images.shape[3], 
+                    device_id=0, 
+                    num_iters=10000
+                )
+
+        return best_loss, meanTestLoss.item(), meanTestIoU.item(), meanTestDice.item(), meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
+
+    else: # dataset == master 
+        if (curr_epoch+1) % 1 == 0:
+            assert num_classes == 1, f'num_classes: 2 not supported for master set'
+            meanValidLoss, meanValidIoU, meanValidDice = inference_master(
+                model=model,
+                loader=valid_loader,
+                inferencer=inferencer,
+                loss_fn=loss_fn,
+                test_type='valid',
             )
+            test_loss_matrix = inference_master(
+                model=model,
+                loader=test_loader,
+                inferencer=inferencer,
+                loss_fn=loss_fn,
+                test_type='test',
+            )
+            assert isinstance(best_loss_index, int), \
+                f'best_loss_index must be int'
+            if best_loss_index == 5: # take best_loss by averaging loss of ALL 
+                # datasets value for the loss_fn 
+                meanTestLoss = test_loss_matrix[:, 0].mean() 
+            else:
+                meanTestLoss = test_loss_matrix[best_loss_index, 0]
 
-    return best_loss, meanTestLoss.item(), meanTestIoU.item(), meanTestDice.item(), meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
+            if meanTestLoss < best_loss:
+                print('New best loss: ', meanTestLoss)
+                logging.info(f'New best loss: {meanTestLoss}')
+                best_loss = meanTestLoss
+                
+                torch.save({
+                    'epoch': curr_epoch,
+                    'model_name': model._get_name(),
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    # 'learning_rate': learning_rate,
+                    'loss': meanTestLoss.item(),
+                }, checkpt_save_dir + f'{model_checkpoint_name}-%d.pth' % curr_epoch)
+
+                print('Saving checkpoint to: ', 
+                    checkpt_save_dir + f'{model_checkpoint_name}-%d.pth'% curr_epoch, "\n")
+                checkpt_save_file = checkpt_save_dir + f'{model_checkpoint_name}-%d.pth'% curr_epoch
+                logging.info(f'Saving checkpoint to: {checkpt_save_file}')
+
+        if speed_test:
+            if (curr_epoch+1) % 5 == 0: 
+                speed_testing(
+                    model, 
+                    images.shape[2], 
+                    images.shape[3], 
+                    device_id=0, 
+                    num_iters=10000
+                )
+
+        return best_loss, test_loss_matrix, meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
+
+

@@ -3,7 +3,14 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt 
 
-def plot_test_valid_loss(test_loss_list, valid_loss_list, num_epochs, save_dir='results/'):
+def plot_test_valid_loss(
+    test_loss_list, 
+    valid_loss_list, 
+    num_epochs, 
+    save_dir='results/', 
+    title='Loss Curve', 
+    save_name='loss_curve.png'
+):
     '''
     Plots the loss curve for test and valid losses. Losses must be in the form 
     of a list. 
@@ -17,7 +24,7 @@ def plot_test_valid_loss(test_loss_list, valid_loss_list, num_epochs, save_dir='
     epoch_list = list()
     for i in range(num_epochs): 
         epoch_list.append(i + 1)
-    print(f'len(test_loss_list, valid_loss_list, epoch_list): {len(test_loss_list), len(valid_loss_list), len(epoch_list)}')
+    # print(f'len(test_loss_list, valid_loss_list, epoch_list): {len(test_loss_list), len(valid_loss_list), len(epoch_list)}')
     assert len(test_loss_list) == len(valid_loss_list) == len(epoch_list)
     test_losses = np.array(test_loss_list)
     valid_losses = np.array(valid_loss_list)
@@ -28,9 +35,9 @@ def plot_test_valid_loss(test_loss_list, valid_loss_list, num_epochs, save_dir='
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     # plt.ylim(min(min(test_losses), min(valid_losses)), max(max(test_losses), max(valid_losses)))
-    plt.title('Loss Curve')
+    plt.title(title)
     plt.legend()
-    plt.savefig(f'{save_dir}/loss_curve.png')
+    plt.savefig(f'{save_dir}/' + save_name)
     plt.show()
 
 
@@ -39,7 +46,9 @@ def visualizeModelOutputfromDataLoader(
     dataloader, 
     model,
     num_batches_to_show=2,    
-    save_dir='results/'
+    save_dir='results/',
+    title='Model Output and Visualization',
+    save_name='model_visualization.png',
 ):
     '''
     THIS IS THE FINAL VERSION. 
@@ -63,9 +72,10 @@ def visualizeModelOutputfromDataLoader(
     pred_list = list() 
 
     for i, image_gt in enumerate(dataloader):
-        images, gts = image_gt
+        images, images_for_visualizaition, gts = image_gt
 
         images = images.cuda()
+        images_for_visualizaition = images_for_visualizaition.cuda()
         gts = gts.cuda() 
 
         with torch.no_grad():
@@ -79,11 +89,13 @@ def visualizeModelOutputfromDataLoader(
 
         images = images.permute(0, 2, 3, 1)
         images = images.squeeze(0).data.cpu().numpy()
+        images_for_visualizaition = images_for_visualizaition.permute(0, 2, 3, 1)
+        images_for_visualizaition = images_for_visualizaition.squeeze(0).data.cpu().numpy()
 
         # output of images, gts, and output now: 
         #       ((256, 256, 3), (256, 256), (256, 256))
 
-        image_list.append(images)
+        image_list.append(images_for_visualizaition)
         gt_list.append(gts)
         pred_list.append(output)
     
@@ -93,15 +105,14 @@ def visualizeModelOutputfromDataLoader(
     fig, ax = plt.subplots(num_batches_to_show, 3, sharex='col', sharey='row')
 
     for i in range(len(sample)):
-        print(gt_list[i].shape)
         ax[i, 0].imshow(image_list[sample[i]])
         ax[0, 0].set_title(f'Input Image')
         ax[i, 1].imshow(pred_list[sample[i]], cmap='gist_gray')
         ax[0, 1].set_title(f'Model Output')
         ax[i, 2].imshow(gt_list[sample[i]], cmap='gist_gray')
         ax[0, 2].set_title(f'Ground Truth')
-    fig.suptitle('Model Output and Visualization') 
-    plt.savefig(f'{save_dir}/model_visualization.png')
+    fig.suptitle(title) 
+    plt.savefig(f'{save_dir}/' + save_name)
     plt.show()
 
 

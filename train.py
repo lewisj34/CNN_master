@@ -3,6 +3,7 @@ import torch
 import click
 import yaml
 import time
+import logging 
 
 from pathlib import Path
 from seg.model.transformer.create_model import create_transformer
@@ -19,10 +20,10 @@ from seg.model.losses.dicebce_loss import DiceBCELoss
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.tversky import TverskyLoss
 from seg.utils.inferenceV2 import InferenceModule, SegmentationMetrics
-from seg.utils.t_dataset import get_tDataset
+from seg.utils.t_dataset import get_tDataset, get_tDatasets_master
 
 from seg.utils.visualize import visualizeModelOutputfromDataLoader, plot_test_valid_loss
-from seg.utils.dataset import get_TestDatasetV2, get_dataset
+from seg.utils.dataset import get_TestDatasetV2, get_dataset, getTestDatasetForVisualization
 from seg.utils.sched import WarmupPoly
 from engineV2 import train_one_epochV2
 
@@ -33,7 +34,7 @@ ALLOWABLE_CNN_MODELS = ['unet']
 ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 
     'resnet152', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 
     'densenet201', 'unet_encoder', None]
-
+BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir', 'ALL']
 
 # try typing this in upon restarting 
 #  python train.py --num_epochs 20 --resume '/home/john/Documents/Dev_Linux/segmentation/trans_isolated/seg/current_checkpoints/Transformer/Transformer-8.pth'
@@ -64,6 +65,7 @@ ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
 @click.option('--trans_branch_checkpt', type=str, default=None, help='path to transformer branch checkpt') # /home/john/Documents/Dev_Linux/segmentation/trans_isolated/seg/current_checkpoints/Transformer/Transformer-22.pth
 @click.option('--lr_sched', type=str, default='warmpoly', help='step, poly, multistep, warmpoly')
 @click.option('--loss_type', type=str, default='iou', help='iou, weight, lovasz')
+@click.option('--best_loss_option', type=str, default='ALL')
 def main(
     dataset,
     model_name,
@@ -90,6 +92,7 @@ def main(
     trans_branch_checkpt,
     lr_sched,
     loss_type,
+    best_loss_option,
 ):
 
     assert model_name in ALLOWABLE_MODELS, 'invalid model_name'
@@ -361,7 +364,7 @@ def main(
     else:
         i = 1
         while os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}') \
-            and os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}/test_loss_file.txt'): # check to see that the test loss files have been generated
+            and os.path.exists(f'results/{model._get_name()}/{model._get_name()}_{i}/valid_loss_file.txt'): # check to see that the test loss files have been generated
             print(f'Dir: results/{model._get_name()}/{model._get_name()}_{i} already exists with save files.')
             i += 1
         model_dir = f'results/{model._get_name()}/{model._get_name()}_{i}'
@@ -370,18 +373,42 @@ def main(
             os.mkdir(model_dir)
         else:
             print(f'Dir: results/{model._get_name()}/{model._get_name()}_{i} exists, but doesnt have any save files, using this one.')
+    
+    # create logger
+    logging.basicConfig(filename=f'{model_dir}/LOG.log', level=logging.INFO, format='%(message)s')
+    logging.info(f'model_dir: {model_dir}')
 
     checkpt_save_dir = model_dir + '/current_checkpoints/' 
     if not os.path.exists(checkpt_save_dir):
         os.mkdir(checkpt_save_dir)
     print(f'checkpoint_save_dir: {checkpt_save_dir}')
 
-    test_loss_list = list()
-    test_iou_list = list()
-    test_dice_list = list()
-    valid_loss_list = list()
-    valid_iou_list = list()
-    valid_dice_list = list()
+    if dataset != 'master':
+        test_loss_list = list()
+        test_iou_list = list()
+        test_dice_list = list()
+        valid_loss_list = list()
+        valid_iou_list = list()
+        valid_dice_list = list()
+    else: # test_cls = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+        test_CVC_300_loss_list = list()
+        test_CVC_300_iou_list = list()
+        test_CVC_300_dice_list = list()
+        test_CVC_ClinicDB_loss_list = list()
+        test_CVC_ClinicDB_iou_list = list()
+        test_CVC_ClinicDB_dice_list = list()
+        test_CVC_ColonDB_loss_list = list()
+        test_CVC_ColonDB_iou_list = list()
+        test_CVC_ColonDB_dice_list = list()
+        test_ETIS_loss_list = list()
+        test_ETIS_iou_list = list()
+        test_ETIS_dice_list = list()
+        test_Kvasir_loss_list = list()
+        test_Kvasir_iou_list = list()
+        test_Kvasir_dice_list = list()
+        valid_loss_list = list()
+        valid_iou_list = list()
+        valid_dice_list = list()
 
     valid_loader = get_tDataset(
         image_root = save_dir + "/data_valid.npy",
@@ -392,15 +419,26 @@ def main(
         num_workers = 4, 
         pin_memory=True,
     )
-    test_loader = get_tDataset(
-        image_root = save_dir + "/data_test.npy",
-        gt_root = save_dir + "/mask_test.npy",
-        normalize_gt = False,
-        batch_size = 1,
-        normalization = 'vit',
-        num_workers = 4, 
-        pin_memory=True,
-    )
+    if dataset != 'master':
+        test_loader = get_tDataset(
+            image_root = save_dir + "/data_test.npy",
+            gt_root = save_dir + "/mask_test.npy",
+            normalize_gt = False,
+            batch_size = 1,
+            normalization = "deit" if "deit" in backbone else "vit",
+            num_workers = 4, 
+            pin_memory=True,
+        )
+    else:
+        # NOTE: ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+        test_loader = get_tDatasets_master(
+            save_dir=save_dir,
+            normalize_gt=False,
+            batch_size=1, 
+            normalization="deit" if "deit" in backbone else "vit", 
+            num_workers=4,
+            pin_memory=True,
+        )
 
     if n_cls == 1:
         inferencer = InferenceModule(eps=0.0001, activation='0-1')
@@ -429,37 +467,96 @@ def main(
     else:
         raise NotImplementedError(f'Just put more elif structures in here.')
 
-    for epoch in range(start_epoch, num_epochs + 1): 
-        start = time.time()
-        best_loss, meanTestLoss, meanTestIoU, meanTestDice, \
-            meanValidLoss, meanValidIoU, meanValidDice = train_one_epochV2(
-            curr_epoch = epoch, 
-            total_epochs = num_epochs,
-            train_loader = train_loader, 
-            valid_loader = valid_loader,
-            test_loader = test_loader,
-            model = model, 
-            inferencer = inferencer,
-            num_classes = n_cls,
-            optimizer = optimizer,
-            batch_size = batch_size,
-            grad_norm = grad_norm, 
-            best_loss = best_loss,
-            model_checkpoint_name = model_checkpoint_name,
-            checkpt_save_dir = checkpt_save_dir,
-            speed_test = speed_test,
-            scheduler = scheduler,
-            loss_fn=loss_fn,
-            loss_fn_params=loss_fn_params,
-            )
-        test_loss_list.append(meanTestLoss)
-        test_iou_list.append(meanTestIoU)
-        test_dice_list.append(meanTestDice)
-        valid_loss_list.append(meanValidLoss)
-        valid_iou_list.append(meanValidIoU)
-        valid_dice_list.append(meanValidDice)
-        end = time.time()
-        print('Time per epoch: {:.4f} (s)\n'.format(end - start))        
+    if dataset != 'master':
+        for epoch in range(start_epoch, num_epochs + 1): 
+            start = time.time()
+            best_loss, meanTestLoss, meanTestIoU, meanTestDice, \
+                meanValidLoss, meanValidIoU, meanValidDice = train_one_epochV2(
+                curr_epoch = epoch, 
+                total_epochs = num_epochs,
+                train_loader = train_loader, 
+                valid_loader = valid_loader,
+                test_loader = test_loader,
+                model = model, 
+                inferencer = inferencer,
+                num_classes = n_cls,
+                optimizer = optimizer,
+                batch_size = batch_size,
+                grad_norm = grad_norm, 
+                best_loss = best_loss,
+                model_checkpoint_name = model_checkpoint_name,
+                checkpt_save_dir = checkpt_save_dir,
+                speed_test = speed_test,
+                scheduler = scheduler,
+                loss_fn=loss_fn,
+                loss_fn_params=loss_fn_params,
+                dataset=dataset,    # doesnt matter
+                best_loss_index=0,  # doesnt matter
+                )
+            test_loss_list.append(meanTestLoss)
+            test_iou_list.append(meanTestIoU)
+            test_dice_list.append(meanTestDice)
+            valid_loss_list.append(meanValidLoss)
+            valid_iou_list.append(meanValidIoU)
+            valid_dice_list.append(meanValidDice)
+            end = time.time()
+            print('Time per epoch: {:.4f} (s)\n'.format(end - start))
+            logging.info('Time per epoch: {:.4f} (s)\n'.format(end - start))        
+    else: # dataset == master
+        # take `best_loss` wrt ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir', 'ALL']
+        best_losses = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir', 'ALL']
+        assert best_loss_option in BEST_LOSS_OPTIONS, \
+            f'Given: {best_loss_option} invalid. Options: {BEST_LOSS_OPTIONS}'
+        best_loss_index = BEST_LOSS_OPTIONS.index(best_loss_option)
+        print(f'Taking best loss WRT: {best_loss_index, best_loss_option}.')
+        logging.info(f'Taking best loss WRT: {best_loss_index, best_loss_option}.') 
+        for epoch in range(start_epoch, num_epochs + 1): 
+            start = time.time()
+            best_loss, test_loss_matrix, \
+                meanValidLoss, meanValidIoU, meanValidDice = train_one_epochV2(
+                curr_epoch = epoch, 
+                total_epochs = num_epochs,
+                train_loader = train_loader, 
+                valid_loader = valid_loader,
+                test_loader = test_loader,
+                model = model, 
+                inferencer = inferencer,
+                num_classes = n_cls,
+                optimizer = optimizer,
+                batch_size = batch_size,
+                grad_norm = grad_norm, 
+                best_loss = best_loss,
+                model_checkpoint_name = model_checkpoint_name,
+                checkpt_save_dir = checkpt_save_dir,
+                speed_test = speed_test,
+                scheduler = scheduler,
+                loss_fn=loss_fn,
+                loss_fn_params=loss_fn_params,
+                dataset=dataset,    
+                best_loss_index=best_loss_index, 
+                )
+            test_CVC_300_loss_list.append(test_loss_matrix[0, 0])
+            test_CVC_300_iou_list.append(test_loss_matrix[0, 1])
+            test_CVC_300_dice_list.append(test_loss_matrix[0, 2])
+            test_CVC_ClinicDB_loss_list.append(test_loss_matrix[1, 0])
+            test_CVC_ClinicDB_iou_list.append(test_loss_matrix[1, 1])
+            test_CVC_ClinicDB_dice_list.append(test_loss_matrix[1, 2])
+            test_CVC_ColonDB_loss_list.append(test_loss_matrix[2, 0])
+            test_CVC_ColonDB_iou_list.append(test_loss_matrix[2, 1])
+            test_CVC_ColonDB_dice_list.append(test_loss_matrix[2, 2])
+            test_ETIS_loss_list.append(test_loss_matrix[3, 0])
+            test_ETIS_iou_list.append(test_loss_matrix[3, 1])
+            test_ETIS_dice_list.append(test_loss_matrix[3, 2])
+            test_Kvasir_loss_list.append(test_loss_matrix[4, 0])
+            test_Kvasir_iou_list.append(test_loss_matrix[4, 1])
+            test_Kvasir_dice_list.append(test_loss_matrix[4, 2])
+            valid_loss_list.append(meanValidLoss)
+            valid_iou_list.append(meanValidIoU)
+            valid_dice_list.append(meanValidDice)
+            end = time.time()
+            print('Time per epoch: {:.4f} (s)\n'.format(end - start))    
+            logging.info('Time per epoch: {:.4f} (s)\n'.format(end - start)) 
+
 
     # save details of training into yaml config file in results dir 
     total_model = {
@@ -484,46 +581,180 @@ def main(
     yaml.dump(total_model, results_file)
     results_file.close()
 
+    if dataset != 'master':
+        plot_test_valid_loss(
+            test_loss_list, 
+            valid_loss_list, 
+            num_epochs - start_epoch + 1,
+            save_dir = model_dir,
+        )
 
-    plot_test_valid_loss(
-        test_loss_list, 
-        valid_loss_list, 
-        num_epochs - start_epoch + 1,
-        save_dir = model_dir,
-    )
+        # save test and validation losses to txt file 
+        test_loss_file = open(f'{model_dir}/test_loss_file.txt', 'w')
+        test_iou_file = open(f'{model_dir}/test_iou_file.txt', 'w')
+        test_dice_file = open(f'{model_dir}/test_dice_file.txt', 'w')
+        valid_loss_file = open(f'{model_dir}/valid_loss_file.txt', 'w')
+        valid_iou_file = open(f'{model_dir}/valid_iou_file.txt', 'w')
+        valid_dice_file = open(f'{model_dir}/valid_dice_file.txt', 'w')
 
-    # save test and validation losses to txt file 
-    test_loss_file = open(f'{model_dir}/test_loss_file.txt', 'w')
-    test_iou_file = open(f'{model_dir}/test_iou_file.txt', 'w')
-    test_dice_file = open(f'{model_dir}/test_dice_file.txt', 'w')
-    valid_loss_file = open(f'{model_dir}/valid_loss_file.txt', 'w')
-    valid_iou_file = open(f'{model_dir}/valid_iou_file.txt', 'w')
-    valid_dice_file = open(f'{model_dir}/valid_dice_file.txt', 'w')
+        for i in range(len(test_loss_list)):
+            test_loss_file.write(str(test_loss_list[i]) + '\n')
+            test_iou_file.write(str(test_iou_list[i]) + '\n')
+            test_dice_file.write(str(test_dice_list[i]) + '\n')
+            valid_loss_file.write(str(valid_loss_list[i]) + '\n')
+            valid_iou_file.write(str(valid_iou_list[i]) + '\n')
+            valid_dice_file.write(str(valid_dice_list[i]) + '\n')
 
-    for i in range(len(test_loss_list)):
-        test_loss_file.write(str(test_loss_list[i]) + '\n')
-        test_iou_file.write(str(test_iou_list[i]) + '\n')
-        test_dice_file.write(str(test_dice_list[i]) + '\n')
-        valid_loss_file.write(str(valid_loss_list[i]) + '\n')
-        valid_iou_file.write(str(valid_iou_list[i]) + '\n')
-        valid_dice_file.write(str(valid_dice_list[i]) + '\n')
+        test_loss_file.close()
+        test_iou_file.close()
+        test_dice_file.close()
+        valid_loss_file.close()
+        valid_iou_file.close()
+        valid_dice_file.close()
 
-    test_loss_file.close()
-    test_iou_file.close()
-    test_dice_file.close()
-    valid_loss_file.close()
-    valid_iou_file.close()
-    valid_dice_file.close()
+        # visualization of output seg. map (w/ input image and ground truth)
+        image_root = save_dir + "/data_test.npy"
+        gt_root = save_dir + "/mask_test.npy"
+        test_dl = getTestDatasetForVisualization(image_root, gt_root)
+        # load in state dictionary - if you want , this is how you would do it just 
+        # uncomment and put in the file path for the .pth  
+        # path_to_dict = '/home/john/Documents/Dev_Linux/segmentation/trans_isolated/ztest_Just_Transformer_25.pth'
+        # model.load_state_dict(torch.load(path_to_dict))
+        visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir)
+    else:
+        plot_test_valid_loss(
+            test_CVC_300_loss_list, 
+            valid_loss_list, 
+            num_epochs - start_epoch + 1,
+            save_dir = model_dir,
+            title='Loss Curve: CVC 300',
+            save_name='loss_curve_CVC_300.png'
+        )
+        plot_test_valid_loss(
+            test_CVC_ClinicDB_loss_list, 
+            valid_loss_list, 
+            num_epochs - start_epoch + 1,
+            save_dir = model_dir,
+            title='Loss Curve: CVC ClinicDB',
+            save_name='loss_curve_CVC_ClinicDB.png'
+        )
+        plot_test_valid_loss(
+            test_CVC_ColonDB_loss_list, 
+            valid_loss_list, 
+            num_epochs - start_epoch + 1,
+            save_dir = model_dir,
+            title='Loss Curve: CVC ColonDB',
+            save_name='loss_curve_CVC_ColonDB.png'
+        )
+        plot_test_valid_loss(
+            test_ETIS_loss_list, 
+            valid_loss_list, 
+            num_epochs - start_epoch + 1,
+            save_dir = model_dir,
+            title='Loss Curve: ETIS',
+            save_name='loss_curve_ETIS.png'
+        )
+        plot_test_valid_loss(
+            test_Kvasir_loss_list, 
+            valid_loss_list, 
+            num_epochs - start_epoch + 1,
+            save_dir = model_dir,
+            title='Loss Curve: Kvasir',
+            save_name='loss_curve_kvasir.png'
+        )
 
-    # visualization of output seg. map (w/ input image and ground truth)
-    image_root = save_dir + "/data_test.npy"
-    gt_root = save_dir + "/mask_test.npy"
-    test_dl = get_TestDatasetV2(image_root, gt_root)
-    # load in state dictionary - if you want , this is how you would do it just 
-    # uncomment and put in the file path for the .pth  
-    # path_to_dict = '/home/john/Documents/Dev_Linux/segmentation/trans_isolated/ztest_Just_Transformer_25.pth'
-    # model.load_state_dict(torch.load(path_to_dict))
-    visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir)
+        # save test and validation losses to txt file - MASTER 
+        test_CVC_300_loss_file = open(f'{model_dir}/test_CVC_300_loss_file.txt', 'w')
+        test_CVC_300_iou_file = open(f'{model_dir}/test_CVC_300_iou_file.txt', 'w')
+        test_CVC_300_dice_file = open(f'{model_dir}/test_CVC_300_dice_file.txt', 'w')
+        test_CVC_ClinicDB_loss_file = open(f'{model_dir}/test_CVC_ClinicDB_loss_file.txt', 'w')
+        test_CVC_ClinicDB_iou_file = open(f'{model_dir}/test_CVC_ClinicDB_iou_file.txt', 'w')
+        test_CVC_ClinicDB_dice_file = open(f'{model_dir}/test_CVC_ClinicDB_dice_file.txt', 'w')
+        test_CVC_ColonDB_loss_file = open(f'{model_dir}/test_CVC_ColonDB_loss_file.txt', 'w')
+        test_CVC_ColonDB_iou_file = open(f'{model_dir}/test_CVC_ColonDB_iou_file.txt', 'w')
+        test_CVC_ColonDB_dice_file = open(f'{model_dir}/test_CVC_ColonDB_dice_file.txt', 'w')
+        test_ETIS_loss_file = open(f'{model_dir}/test_ETIS_loss_file.txt', 'w')
+        test_ETIS_iou_file = open(f'{model_dir}/test_ETIS_iou_file.txt', 'w')
+        test_ETIS_dice_file = open(f'{model_dir}/test_ETIS_dice_file.txt', 'w')
+        test_Kvasir_loss_file = open(f'{model_dir}/test_Kvasir_loss_file.txt', 'w')
+        test_Kvasir_iou_file = open(f'{model_dir}/test_Kvasir_iou_file.txt', 'w')
+        test_Kvasir_dice_file = open(f'{model_dir}/test_Kvasir_dice_file.txt', 'w')
+
+        valid_loss_file = open(f'{model_dir}/valid_loss_file.txt', 'w')
+        valid_iou_file = open(f'{model_dir}/valid_iou_file.txt', 'w')
+        valid_dice_file = open(f'{model_dir}/valid_dice_file.txt', 'w')
+
+        for i in range(len(test_CVC_300_loss_list)):
+            test_CVC_300_loss_file.write(str(test_CVC_300_loss_list[i]) + '\n')
+            test_CVC_300_iou_file.write(str(test_CVC_300_iou_list[i]) + '\n')
+            test_CVC_300_dice_file.write(str(test_CVC_300_dice_list[i]) + '\n')
+        for i in range(len(test_CVC_ClinicDB_loss_list)):
+            test_CVC_ClinicDB_loss_file.write(str(test_CVC_ClinicDB_loss_list[i]) + '\n')
+            test_CVC_ClinicDB_iou_file.write(str(test_CVC_ClinicDB_iou_list[i]) + '\n')
+            test_CVC_ClinicDB_dice_file.write(str(test_CVC_ClinicDB_dice_list[i]) + '\n')
+        for i in range(len(test_CVC_ColonDB_loss_list)):
+            test_CVC_ColonDB_loss_file.write(str(test_CVC_ColonDB_loss_list[i]) + '\n')
+            test_CVC_ColonDB_iou_file.write(str(test_CVC_ColonDB_iou_list[i]) + '\n')
+            test_CVC_ColonDB_dice_file.write(str(test_CVC_ColonDB_dice_list[i]) + '\n')
+        for i in range(len(test_ETIS_loss_list)):
+            test_ETIS_loss_file.write(str(test_ETIS_loss_list[i]) + '\n')
+            test_ETIS_iou_file.write(str(test_ETIS_iou_list[i]) + '\n')
+            test_ETIS_dice_file.write(str(test_ETIS_dice_list[i]) + '\n')
+        for i in range(len(test_Kvasir_loss_list)):
+            test_Kvasir_loss_file.write(str(test_Kvasir_loss_list[i]) + '\n')
+            test_Kvasir_iou_file.write(str(test_Kvasir_iou_list[i]) + '\n')
+            test_Kvasir_dice_file.write(str(test_Kvasir_dice_list[i]) + '\n')
+        for i in range(len(valid_loss_list)):
+            valid_loss_file.write(str(valid_loss_list[i]) + '\n')
+            valid_iou_file.write(str(valid_iou_list[i]) + '\n')
+            valid_dice_file.write(str(valid_dice_list[i]) + '\n')
+
+        test_CVC_300_loss_file.close()
+        test_CVC_300_iou_file.close()
+        test_CVC_300_dice_file.close()
+        test_CVC_ClinicDB_loss_file.close()
+        test_CVC_ClinicDB_iou_file.close()
+        test_CVC_ClinicDB_dice_file.close()
+        test_CVC_ColonDB_loss_file.close()
+        test_CVC_ColonDB_iou_file.close()
+        test_CVC_ColonDB_dice_file.close()
+        test_ETIS_loss_file.close()
+        test_ETIS_iou_file.close()
+        test_ETIS_dice_file.close()
+        test_Kvasir_loss_file.close()
+        test_Kvasir_iou_file.close()
+        test_Kvasir_dice_file.close()
+
+        valid_loss_file.close()
+        valid_iou_file.close()
+        valid_dice_file.close()
+
+        # visualization of output seg. map (w/ input image and ground truth)
+        CVC_300_image_root = save_dir + "/data_CVC_300_test.npy"
+        CVC_300_gt_root = save_dir + "/mask_CVC_300_test.npy"
+        test_dl = getTestDatasetForVisualization(CVC_300_image_root, CVC_300_gt_root)
+        # load in state dictionary - if you want , this is how you would do it just 
+        # uncomment and put in the file path for the .pth  
+        # path_to_dict = '/home/john/Documents/Dev_Linux/segmentation/trans_isolated/ztest_Just_Transformer_25.pth'
+        # model.load_state_dict(torch.load(path_to_dict))
+        visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir, title='CVC 300 Model Visualization', save_name='CVC_300_model_visual.png')
+
+        CVC_ClinicDB_image_root = save_dir + "/data_CVC_ClinicDB_test.npy"
+        CVC_ClinicDB_gt_root = save_dir + "/mask_CVC_ClinicDB_test.npy"
+        test_dl = getTestDatasetForVisualization(CVC_ClinicDB_image_root, CVC_ClinicDB_gt_root)
+        visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir, title='CVC Clinic DB Model Visualization', save_name='CVC_ClinicDB_model_visual.png')
+        CVC_ColonDB_image_root = save_dir + "/data_CVC_ColonDB_test.npy"
+        CVC_ColonDB_gt_root = save_dir + "/mask_CVC_ColonDB_test.npy"
+        test_dl = getTestDatasetForVisualization(CVC_ColonDB_image_root, CVC_ColonDB_gt_root)
+        visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir, title='CVC Colon DB Model Visualization', save_name='CVC_ColonDB_model_visual.png')
+        ETIS_image_root = save_dir + "/data_ETIS_test.npy"
+        ETIS_gt_root = save_dir + "/mask_ETIS_test.npy"
+        test_dl = getTestDatasetForVisualization(ETIS_image_root, ETIS_gt_root)
+        visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir, title='ETIS Model Visualization', save_name='ETIS_model_visual.png')
+        Kvasir_image_root = save_dir + "/data_Kvasir_test.npy"
+        Kvasir_gt_root = save_dir + "/mask_Kvasir_test.npy"
+        test_dl = getTestDatasetForVisualization(Kvasir_image_root, Kvasir_gt_root)
+        visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir, title='Kvasir Model Visualization', save_name='Kvasir_model_visual.png')
     ###########################################################################
     ###########################################################################
 

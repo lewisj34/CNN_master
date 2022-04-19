@@ -43,6 +43,150 @@ from .utils.generate_csv import generate_csv
 def list_overlap(a, b):
     return bool(set(a) & set(b))
 
+def generate_split_txt_files_master(
+    parent_dir='/home/john/Documents/Datasets/master_polyp'
+):
+    '''
+    Used explicitly for the master polyp dataset. 
+
+    Generates .txt files for train, valid, and test sets by creating a csv for 
+    each set, and then converting that csv to a .txt file for each and then 
+    populating the split_dir with each of those .txt files. 
+    Args:
+        @parent_dir: the master dataset containing the master set of images.
+    File sturcture:
+        master/
+        ├─ TrainDataset/
+        │  ├─ image/
+        │  ├─ mask/
+        ├─ TestDataset/
+        │  ├─ CVC-300/
+        │  ├─ CVC-ClinicDB/
+        │  ├─ CVC-ColonDB/
+        │  ├─ ETIS-LaribPolypDB/
+        │  ├─ Kvasir/
+    '''
+    train_img_dir = parent_dir + '/TrainDataset/image/'
+    train_ann_dir = parent_dir + '/TrainDataset/mask/'
+    
+    test_CVC_300_img_dir = parent_dir + '/TestDataset/CVC-300/images/'
+    test_CVC_300_ann_dir = parent_dir + '/TestDataset/CVC-300/masks/'
+
+    test_CVC_ClinicDB_img_dir = parent_dir + '/TestDataset/CVC-ClinicDB/images/'
+    test_CVC_ClinicDB_ann_dir = parent_dir + '/TestDataset/CVC-ClinicDB/masks/'
+
+    test_CVC_ColonDB_img_dir = parent_dir + '/TestDataset/CVC-ColonDB/images/'
+    test_CVC_ColonDB_ann_dir = parent_dir + '/TestDataset/CVC-ColonDB/masks/'
+
+    test_ETIS_img_dir = parent_dir + '/TestDataset/ETIS-LaribPolypDB/images/'
+    test_ETIS_ann_dir = parent_dir + '/TestDataset/ETIS-LaribPolypDB/masks/'
+
+    test_kvasir_img_dir = parent_dir + '/TestDataset/Kvasir/images/'
+    test_kvasir_ann_dir = parent_dir + '/TestDataset/Kvasir/masks/'
+    
+    split_dir = parent_dir + '/splits/'
+    train_split_path = split_dir + 'train.txt'
+    valid_split_path = split_dir + 'valid.txt'
+    test_split_CVC_300_path = split_dir + 'CVC_300_test.txt'
+    test_split_CVC_ClinicDB_path = split_dir + 'CVC_ClinicDB_test.txt'
+    test_split_CVC_ColonDB_path = split_dir + 'CVC_ColonDB_test.txt'
+    test_split_ETIS_path = split_dir + 'ETIS_test.txt'
+    test_split_Kvasir_path = split_dir + 'Kvasir_test.txt'
+
+
+
+    
+    if not os.path.isfile(train_split_path) \
+        or not os.path.isfile(valid_split_path) \
+        or not os.path.isfile(test_split_CVC_300_path) \
+        or not os.path.isfile(test_split_CVC_ClinicDB_path) \
+        or not os.path.isfile(test_split_CVC_ColonDB_path) \
+        or not os.path.isfile(test_split_ETIS_path) \
+        or not os.path.isfile(test_split_Kvasir_path):
+        print("Splits don't exist. Generating new splits.")
+
+        # split 'TrainDataset' into train and val by generating csv of file locs
+        csv_location = generate_csv(train_img_dir, train_ann_dir, 'traindata.csv', 'seg/data/master/csvs/')
+        print(f'csv_location: {csv_location}')
+        metadata_df = pd.read_csv(csv_location)
+
+        # shuffle 
+        metadata_df = metadata_df.sample(frac=1).reset_index(drop=True)
+
+        # we're not going to split the train data for the master dataset, like 
+        # we have before. we're just going to sample 20-30% of the train dataset
+        # WITH replacement. so the train dataset will automatically contain the 
+        # val data and we won't need to readd it again later. in other words
+        # the validation data is just going to be train data that the moodel 
+        # has already seen 
+        # and keep the train dataset whole 
+        valid_df = metadata_df.sample(frac=0.1, random_state=42)
+        train_df = metadata_df
+
+        valid_list = valid_df["image_ids"].tolist()
+        train_list = train_df["image_ids"].tolist()
+        
+        # for test sets: same thing, generate a csv of file locations, convert
+        # to data frame, then create lists 
+        tCVC300_loc = generate_csv(test_CVC_300_img_dir, test_CVC_300_ann_dir, 'tCVC300.csv', 'seg/data/master/csvs/')
+        tCVC_ClinicDB_loc = generate_csv(test_CVC_ClinicDB_img_dir, test_CVC_ClinicDB_ann_dir, 'tCVC_ClinicDB.csv', 'seg/data/master/csvs/')
+        tCVC_ColonDB_loc = generate_csv(test_CVC_ColonDB_img_dir, test_CVC_ColonDB_ann_dir, 'tCVC_ColonDB.csv', 'seg/data/master/csvs/')
+        tETIS_loc = generate_csv(test_ETIS_img_dir, test_ETIS_ann_dir, 'tETIS.csv', 'seg/data/master/csvs/')
+        tKvasir_loc = generate_csv(test_kvasir_img_dir, test_kvasir_ann_dir, 'tKvasir.csv', 'seg/data/master/csvs/')
+        
+        tCVC300_df = pd.read_csv(tCVC300_loc)
+        tCVCClinicDB_df = pd.read_csv(tCVC_ClinicDB_loc)
+        tCVCColonDB_df = pd.read_csv(tCVC_ColonDB_loc)
+        tETIS_df = pd.read_csv(tETIS_loc)
+        tKvasir_df = pd.read_csv(tKvasir_loc)
+
+        # shuffle the test sets 
+        tCVC300_df = tCVC300_df.sample(frac=1).reset_index(drop=True)
+        tCVCClinicDB_df = tCVCClinicDB_df.sample(frac=1).reset_index(drop=True)
+        tCVCColonDB_df = tCVCColonDB_df.sample(frac=1).reset_index(drop=True)
+        tETIS_df = tETIS_df.sample(frac=1).reset_index(drop=True)
+        tKvasir_df = tKvasir_df.sample(frac=1).reset_index(drop=True)
+
+        tCVC300_list = tCVC300_df["image_ids"].tolist()
+        tCVCClinicDB_list = tCVCClinicDB_df["image_ids"].tolist()
+        tCVCColonDB_list = tCVCColonDB_df["image_ids"].tolist()
+        tETIS_list = tETIS_df["image_ids"].tolist()
+        tKvasir_list = tKvasir_df["image_ids"].tolist()
+
+        print(f'len(tCVC300_list): {len(tCVC300_list)}')
+        print(f'len(tCVCClinicDB_list): {len(tCVCClinicDB_list)}')
+        print(f'len(tCVCColonDB_list): {len(tCVCColonDB_list)}')
+        print(f'len(tETIS_list): {len(tETIS_list)}')
+        print(f'len(tKvasir_list): {len(tKvasir_list)}')
+
+        # generate split files/dir in split_dir
+        if os.path.isdir(split_dir):
+            print("splits/ exists. Deleting.\n")
+            shutil.rmtree(split_dir)
+        else:
+            print("splits/ DNE. Creating new directory.\n")
+
+        os.makedirs(split_dir,\
+            exist_ok=False)
+
+        print("Writing split files.\n")
+        with open(train_split_path, "w") as outfile:
+            outfile.write("\n".join(train_list))
+        with open(valid_split_path, "w") as outfile:
+            outfile.write("\n".join(valid_list))
+        with open(test_split_CVC_300_path, "w") as outfile:
+            outfile.write("\n".join(tCVC300_list))
+        with open(test_split_CVC_ClinicDB_path, "w") as outfile:
+            outfile.write("\n".join(tCVCClinicDB_list))
+        with open(test_split_CVC_ColonDB_path, "w") as outfile:
+            outfile.write("\n".join(tCVCColonDB_list))
+        with open(test_split_ETIS_path, "w") as outfile:
+            outfile.write("\n".join(tETIS_list))
+        with open(test_split_Kvasir_path, "w") as outfile:
+            outfile.write("\n".join(tKvasir_list))
+        print("Splits written to: ", split_dir)
+    else:
+        print("Splits for master set exist already at location:", split_dir)  
 
 def generate_split_txt_files(
     parent_dir='/home/john/Documents/Datasets/kvasir_merged'
@@ -137,6 +281,26 @@ def data_files_exist(save_dir):
         os.path.isfile(save_dir + "/data_train.npy") and \
         os.path.isfile(save_dir + "/data_valid.npy") and \
         os.path.isfile(save_dir + "/mask_test.npy") and \
+        os.path.isfile(save_dir + "/mask_train.npy") and \
+        os.path.isfile(save_dir + "/mask_valid.npy"):
+            return True
+    else:
+        return False
+
+def data_files_exist_master(save_dir):
+    if os.path.isfile(save_dir + "/params.yaml") and \
+        os.path.isfile(save_dir + "/data_CVC_300_test.npy") and \
+        os.path.isfile(save_dir + "/data_CVC_ClinicDB_test.npy") and \
+        os.path.isfile(save_dir + "/data_CVC_ColonDB_test.npy") and \
+        os.path.isfile(save_dir + "/data_ETIS_test.npy") and \
+        os.path.isfile(save_dir + "/data_Kvasir_test.npy") and \
+        os.path.isfile(save_dir + "/data_train.npy") and \
+        os.path.isfile(save_dir + "/data_valid.npy") and \
+        os.path.isfile(save_dir + "/mask_CVC_300_test.npy") and \
+        os.path.isfile(save_dir + "/mask_CVC_ClinicDB_test.npy") and \
+        os.path.isfile(save_dir + "/mask_CVC_ColonDB_test.npy") and \
+        os.path.isfile(save_dir + "/mask_ETIS_test.npy") and \
+        os.path.isfile(save_dir + "/mask_Kvasir_test.npy") and \
         os.path.isfile(save_dir + "/mask_train.npy") and \
         os.path.isfile(save_dir + "/mask_valid.npy"):
             return True
@@ -479,22 +643,40 @@ def split_and_convert_to_npyV2(
         print("Directory:", save_dir + " does not exist. Creating.")
         Path(save_dir).mkdir(parents=True, exist_ok=True)
 
-    if data_files_exist(save_dir):
-        print("All data files exist")
-        file_params = yaml.load(open(Path(save_dir + "/params.yaml")), 
-            Loader=yaml.FullLoader)
-        if file_params == model_params and not reimport_data:
-            print("All files exist and model params are the same. \
-Not reimporting data. Exiting split_and_convert_to_npy(...)")
-            return None
-        elif file_params != model_params:
-            print("All file exists but model params changed, must rewrite.")
+    if dataset != 'master':
+        if data_files_exist(save_dir):
+            print("All data files exist")
+            file_params = yaml.load(open(Path(save_dir + "/params.yaml")), 
+                Loader=yaml.FullLoader)
+            if file_params == model_params and not reimport_data:
+                print("All files exist and model params are the same. \
+    Not reimporting data. Exiting split_and_convert_to_npy(...)")
+                return None
+            elif file_params != model_params:
+                print("All file exists but model params changed, must rewrite.")
+                with open(save_dir + "/params.yaml", 'w') as file:
+                    params = yaml.dump(model_params, file)
+        else:
+            print("One or more data files do not exist. Must create or rewrite.")
             with open(save_dir + "/params.yaml", 'w') as file:
                 params = yaml.dump(model_params, file)
     else:
-        print("One or more data files do not exist. Must create or rewrite.")
-        with open(save_dir + "/params.yaml", 'w') as file:
-            params = yaml.dump(model_params, file)
+        if data_files_exist_master(save_dir):
+            print("All data files exist")
+            file_params = yaml.load(open(Path(save_dir + "/params.yaml")), 
+                Loader=yaml.FullLoader)
+            if file_params == model_params and not reimport_data:
+                print("All files exist and model params are the same. \
+    Not reimporting data. Exiting split_and_convert_to_npy(...)")
+                return None
+            elif file_params != model_params:
+                print("All file exists but model params changed, must rewrite.")
+                with open(save_dir + "/params.yaml", 'w') as file:
+                    params = yaml.dump(model_params, file)
+        else:
+            print("One or more data files do not exist. Must create or rewrite.")
+            with open(save_dir + "/params.yaml", 'w') as file:
+                params = yaml.dump(model_params, file)
 
     if dataset == 'kvasir':
         parent_dir = '/home/john/Documents/Datasets/kvasir_merged'
@@ -511,22 +693,135 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
     elif dataset == 'master':
         parent_dir = '/home/john/Documents/Datasets/master_polyp'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
-        print(f'Using master dataset.')
-        exit(1)
     else:
         raise NotImplementedError(f'Dataset: {dataset} not implemented.')    
         
-    TRAIN_SPLIT_PATH = parent_dir + "/splits/" + "train.txt"
-    VALID_SPLIT_PATH = parent_dir + "/splits/" + "valid.txt"
-    TEST_SPLIT_PATH = parent_dir + "/splits/" + "test.txt"    
-    IMG_DIR = parent_dir + '/images/'
-    ANN_DIR = parent_dir + '/annotations/'
-    
-    # generate split mapping file paths {train, valid, test}.txt
-    generate_split_txt_files(parent_dir=parent_dir)
+    if dataset != 'master': # i.e. any normal dataset
+        TRAIN_SPLIT_PATH = parent_dir + "/splits/" + "train.txt"
+        VALID_SPLIT_PATH = parent_dir + "/splits/" + "valid.txt"
+        TEST_SPLIT_PATH = parent_dir + "/splits/" + "test.txt"    
+        IMG_DIR = parent_dir + '/images/'
+        ANN_DIR = parent_dir + '/annotations/'
+        
+        # generate split mapping file paths {train, valid, test}.txt
+        generate_split_txt_files(parent_dir=parent_dir)
 
-    if num_classes == 1:
-        # # organize train data into {data, mask}.npy files from splits
+        if num_classes == 1:
+            # # organize train data into {data, mask}.npy files from splits
+            process_dataset(
+                split_path = TRAIN_SPLIT_PATH, 
+                save_location = save_dir, 
+                img_dir = IMG_DIR,
+                ann_dir = ANN_DIR,
+                resize_size = resize_size,
+                crop_size = crop_size,
+                image_size = image_size,
+            )
+
+            # # organize valid data into {data, mask}.npy files from splits
+            process_dataset(
+                split_path = VALID_SPLIT_PATH, 
+                save_location = save_dir, 
+                img_dir = IMG_DIR,
+                ann_dir = ANN_DIR,
+                resize_size = resize_size,
+                crop_size = crop_size,
+                image_size = image_size,
+            )
+
+            # # organize test data into {data, mask}.npy files from splits 
+            process_dataset(
+                split_path = TEST_SPLIT_PATH, 
+                save_location = save_dir, 
+                img_dir = IMG_DIR,
+                ann_dir = ANN_DIR,
+                resize_size = resize_size,
+                crop_size = crop_size,
+                image_size = image_size,
+            )
+        elif num_classes == 2:
+            # # organize train data into {data, mask}.npy files from splits
+            process_dataset_two_classes(
+                split_path = TRAIN_SPLIT_PATH, 
+                save_location = save_dir, 
+                img_dir = IMG_DIR,
+                ann_dir = ANN_DIR,
+                resize_size = resize_size,
+                crop_size = crop_size,
+                image_size = image_size,
+            )
+
+            # # organize valid data into {data, mask}.npy files from splits
+            process_dataset_two_classes(
+                split_path = VALID_SPLIT_PATH, 
+                save_location = save_dir, 
+                img_dir = IMG_DIR,
+                ann_dir = ANN_DIR,
+                resize_size = resize_size,
+                crop_size = crop_size,
+                image_size = image_size,
+            )
+
+            # # organize test data into {data, mask}.npy files from splits 
+            process_dataset_two_classes(
+                split_path = TEST_SPLIT_PATH, 
+                save_location = save_dir, 
+                img_dir = IMG_DIR,
+                ann_dir = ANN_DIR,
+                resize_size = resize_size,
+                crop_size = crop_size,
+                image_size = image_size,
+            )
+
+            print(f'exiting..')
+            exit(1)
+    else:
+        # so we still want split files for train test and valid... but we're 
+        # going to keep these the way they are 
+        '''
+        So we still want split files for train, test, and valid sets but the 
+        master dataset structure is different. It follows: 
+        master/
+        ├─ TrainDataset/
+        │  ├─ images/
+        │  ├─ masks/
+        ├─ TestDataset/
+        │  ├─ CVC-300/
+        │  ├─ CVC-ClinicDB/
+        │  ├─ CVC-ColonDB/
+        │  ├─ ETIS-LaribPolypDB/
+        │  ├─ Kvasir/
+
+        We're just going to assume that every iteration of this program that is
+        run will have this folder structure somewhere on the system so all we 
+        will specify as an argument is parent_dir which holds the location of
+        the above file structure
+        '''
+        TRAIN_SPLIT_PATH = parent_dir + "/splits/" + "train.txt"
+        VALID_SPLIT_PATH = parent_dir + "/splits/" + "valid.txt"
+        TEST_CVC300_SPLIT_PATH = parent_dir + "/splits/" + "CVC_300_test.txt"  
+        TEST_CLINICDB_SPLIT_PATH = parent_dir + "/splits/" + "CVC_ClinicDB_test.txt"  
+        TEST_COLONDB_SPLIT_PATH = parent_dir + "/splits/" + "CVC_ColonDB_test.txt"  
+        TEST_ETIS_SPLIT_PATH = parent_dir + "/splits/" + "ETIS_test.txt"  
+        TEST_KVASIR_SPLIT_PATH = parent_dir + "/splits/" + "Kvasir_test.txt"  
+
+        generate_split_txt_files_master(parent_dir)  
+        IMG_DIR = parent_dir + '/TrainDataset/image/'
+        ANN_DIR = parent_dir + '/TrainDataset/mask/'
+        CVC300_IMG_DIR = parent_dir + '/TestDataset/CVC-300/images/'
+        CVC300_ANN_DIR = parent_dir + '/TestDataset/CVC-300/masks/'
+        CLINC_DB_IMG_DIR = parent_dir + '/TestDataset/CVC-ClinicDB/images/'
+        CLINC_DB_ANN_DIR = parent_dir + '/TestDataset/CVC-ClinicDB/masks/'
+        COLON_DB_IMG_DIR = parent_dir + '/TestDataset/CVC-ColonDB/images/'
+        COLON_DB_ANN_DIR = parent_dir + '/TestDataset/CVC-ColonDB/masks/'
+        ETIS_IMG_DIR = parent_dir + '/TestDataset/ETIS-LaribPolypDB/images/'
+        ETIS_ANN_DIR = parent_dir + '/TestDataset/ETIS-LaribPolypDB/masks/'
+        KVASIR_IMG_DIR = parent_dir + '/TestDataset/Kvasir/images/'
+        KVASIR_ANN_DIR = parent_dir + '/TestDataset/Kvasir/masks/'
+
+        if num_classes != 1: 
+            raise ValueError(f'num_classes == 1 for master dataset')
+
         process_dataset(
             split_path = TRAIN_SPLIT_PATH, 
             save_location = save_dir, 
@@ -536,8 +831,6 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
             crop_size = crop_size,
             image_size = image_size,
         )
-
-        # # organize valid data into {data, mask}.npy files from splits
         process_dataset(
             split_path = VALID_SPLIT_PATH, 
             save_location = save_dir, 
@@ -547,53 +840,51 @@ Not reimporting data. Exiting split_and_convert_to_npy(...)")
             crop_size = crop_size,
             image_size = image_size,
         )
-
-        # # organize test data into {data, mask}.npy files from splits 
         process_dataset(
-            split_path = TEST_SPLIT_PATH, 
+            split_path = TEST_CVC300_SPLIT_PATH, 
             save_location = save_dir, 
-            img_dir = IMG_DIR,
-            ann_dir = ANN_DIR,
+            img_dir = CVC300_IMG_DIR,
+            ann_dir = CVC300_ANN_DIR,
             resize_size = resize_size,
             crop_size = crop_size,
             image_size = image_size,
         )
-    elif num_classes == 2:
-        # # organize train data into {data, mask}.npy files from splits
-        process_dataset_two_classes(
-            split_path = TRAIN_SPLIT_PATH, 
+        process_dataset(
+            split_path = TEST_CLINICDB_SPLIT_PATH, 
             save_location = save_dir, 
-            img_dir = IMG_DIR,
-            ann_dir = ANN_DIR,
+            img_dir = CLINC_DB_IMG_DIR,
+            ann_dir = CLINC_DB_ANN_DIR,
             resize_size = resize_size,
             crop_size = crop_size,
             image_size = image_size,
         )
-
-        # # organize valid data into {data, mask}.npy files from splits
-        process_dataset_two_classes(
-            split_path = VALID_SPLIT_PATH, 
+        process_dataset(
+            split_path = TEST_COLONDB_SPLIT_PATH, 
             save_location = save_dir, 
-            img_dir = IMG_DIR,
-            ann_dir = ANN_DIR,
+            img_dir = COLON_DB_IMG_DIR,
+            ann_dir = COLON_DB_ANN_DIR,
             resize_size = resize_size,
             crop_size = crop_size,
             image_size = image_size,
         )
-
-        # # organize test data into {data, mask}.npy files from splits 
-        process_dataset_two_classes(
-            split_path = TEST_SPLIT_PATH, 
+        process_dataset(
+            split_path = TEST_ETIS_SPLIT_PATH, 
             save_location = save_dir, 
-            img_dir = IMG_DIR,
-            ann_dir = ANN_DIR,
+            img_dir = ETIS_IMG_DIR,
+            ann_dir = ETIS_ANN_DIR,
             resize_size = resize_size,
             crop_size = crop_size,
             image_size = image_size,
         )
-
-        print(f'exiting..')
-        exit(1)
+        process_dataset(
+            split_path = TEST_KVASIR_SPLIT_PATH, 
+            save_location = save_dir, 
+            img_dir = KVASIR_IMG_DIR,
+            ann_dir = KVASIR_ANN_DIR,
+            resize_size = resize_size,
+            crop_size = crop_size,
+            image_size = image_size,
+        )
     ########################################################################
     # DEFUNCT BELOW THIS LINE. JUST WAS GETTING US WHAT WE NEEDED IN TERMS OF 
     # CROP AND STUFF SO THAT WE COULD FINALIZE process_dataset(...)

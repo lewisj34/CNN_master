@@ -3,6 +3,7 @@ This is the final version.
 Contains test() and validate() but runs on the GPU not the CPU 
 '''
 
+import logging
 import torch 
 import torch.nn as nn 
 from tqdm import tqdm 
@@ -225,6 +226,7 @@ def inference(model, loader, inferencer, loss_fn, test_type):
     Evaluate either test or validation set. Function is called per epoch. 
         @model: the model to run the inference test on 
         @loader: the dataloader containing the test or validation set 
+        @inferencer: class that holds all the methods to calculate acc, TP, etc
         @loss_fn: the nn.Module class containing the loss function 
         @test_type: str denoting whether we're working with test or valid set 
     '''
@@ -278,8 +280,10 @@ def inference(model, loader, inferencer, loss_fn, test_type):
     
     if test_type == 'valid' or test_type == 'validation':
         print("\nValidation Dataset Statistics: \n")
+        logging.info("\nValidation Dataset Statistics: \n")
     else:
         print("\nTest Dataset Statistics: \n")
+        logging.info("\nTest Dataset Statistics: \n")
     print("\tLoss: {:.4f}".format(loss_tensor.mean()))
     print("\tDice: {:.4f}".format(dice_tensor.mean()))
     print("\tIoU: {:.4f}".format(iou_tensor.mean()))
@@ -290,6 +294,17 @@ def inference(model, loader, inferencer, loss_fn, test_type):
     print("\tFalse positive average: {:.4f}".format(fp_tensor.mean()))
     print("\tTrue negative average: {:.4f}".format(tn_tensor.mean()))
     print("\tFalse negative average: {:.4f}".format(fn_tensor.mean()))
+
+    logging.info("\tLoss: {:.4f}".format(loss_tensor.mean()))
+    logging.info("\tDice: {:.4f}".format(dice_tensor.mean()))
+    logging.info("\tIoU: {:.4f}".format(iou_tensor.mean()))
+    logging.info("\tAccuracy: {:.4f}".format(acc_tensor.mean()))
+    logging.info("\tPrecision: {:.4f}".format(prec_tensor.mean()))
+    logging.info("\tRecall: {:.4f}".format(rec_tensor.mean()))
+    logging.info("\tTrue positive average: {:.4f}".format(tp_tensor.mean()))
+    logging.info("\tFalse positive average: {:.4f}".format(fp_tensor.mean()))
+    logging.info("\tTrue negative average: {:.4f}".format(tn_tensor.mean()))
+    logging.info("\tFalse negative average: {:.4f}".format(fn_tensor.mean()))
 
     return loss_tensor.mean(), iou_tensor.mean(), dice_tensor.mean()
 
@@ -352,8 +367,10 @@ def inference_multi_class(model, loader, inferencer, loss_fn, test_type):
     
     if test_type == 'valid' or test_type == 'validation':
         print("\nValidation Dataset Statistics: \n")
+        logging.info("\nValidation Dataset Statistics: \n")
     else:
         print("\nTest Dataset Statistics: \n")
+        logging.info("\nTest Dataset Statistics: \n")
     print("\tLoss: {:.4f}".format(loss_tensor.mean()))
     print("\tDice: {:.4f}".format(dice_tensor.mean()))
     print("\tIoU: {:.4f}".format(iou_tensor.mean()))
@@ -364,6 +381,17 @@ def inference_multi_class(model, loader, inferencer, loss_fn, test_type):
     print("\tFalse positive average: {:.4f}".format(fp_tensor.mean()))
     print("\tTrue negative average: {:.4f}".format(tn_tensor.mean()))
     print("\tFalse negative average: {:.4f}".format(fn_tensor.mean()))
+
+    logging.info("\tLoss: {:.4f}".format(loss_tensor.mean()))
+    logging.info("\tDice: {:.4f}".format(dice_tensor.mean()))
+    logging.info("\tIoU: {:.4f}".format(iou_tensor.mean()))
+    logging.info("\tAccuracy: {:.4f}".format(acc_tensor.mean()))
+    logging.info("\tPrecision: {:.4f}".format(prec_tensor.mean()))
+    logging.info("\tRecall: {:.4f}".format(rec_tensor.mean()))
+    logging.info("\tTrue positive average: {:.4f}".format(tp_tensor.mean()))
+    logging.info("\tFalse positive average: {:.4f}".format(fp_tensor.mean()))
+    logging.info("\tTrue negative average: {:.4f}".format(tn_tensor.mean()))
+    logging.info("\tFalse negative average: {:.4f}".format(fn_tensor.mean()))
 
     return loss_tensor.mean(), iou_tensor.mean(), dice_tensor.mean()
 

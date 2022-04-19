@@ -6,3 +6,12 @@ seg/data/
 
 # ignore defunct
 defunct/
+
+# ignore metadata
+metadata.csv
+traindata.csv
+test_cvc_300.csv
+test_cvc_clinic_db.csv
+test_cvc_colon_db.csv
+test_etis.csv
+test_kvasir.csv

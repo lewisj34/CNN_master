@@ -35,6 +35,7 @@ class DecoderPlus(nn.Module):
     def __init__(
         self,
         input_size=(16, 16),
+        in_chans=1,
         output_size=(256, 256),
         inter_chans=32,
         out_chans=1,
@@ -46,7 +47,7 @@ class DecoderPlus(nn.Module):
 
         self.output_size = output_size
         self.up1 = UpMod(
-            in_channels = 1, 
+            in_channels = in_chans, 
             out_channels = inter_chans,
             bilinear=True,
             scale_factor=4,

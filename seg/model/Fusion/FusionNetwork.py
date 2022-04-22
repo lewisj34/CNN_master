@@ -93,18 +93,18 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         '''
         if self.with_fusion:
             # 1 / 2 - note (kind of wack given that you have to interploate from 1/4)
-            x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch.x_1_2)
-            x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch.x_1_4)
-            x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch.x_1_8)
-            x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch.x_1_16)
+            self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch.x_1_2)
+            self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch.x_1_4)
+            self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch.x_1_8)
+            self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch.x_1_16)
 
             if self.patch_size == 16:
-                tensor_list = [x_final_cnn, x_final_trans, x_1_2, x_1_4, x_1_8, x_1_16]
+                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
                 return mean
             elif self.patch_size == 32:
                 x_1_32 = self.fuse_1_32(self.cnn_branch.x_1_32, self.trans_branch.x_1_32)
-                tensor_list = [x_final_cnn, x_final_trans, x_1_2, x_1_4, x_1_8, x_1_16, x_1_32]
+                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
                 return mean
 

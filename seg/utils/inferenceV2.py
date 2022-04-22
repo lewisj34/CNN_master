@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn 
 from tqdm import tqdm 
 import numpy as np 
+import torch.nn.functional as F
 
 from seg.utils.t_dataset import get_tDataset
 from seg.utils.weighted_loss import weighted_loss
@@ -16,6 +17,11 @@ from seg.utils.iou_dice import mean_dice_score, mean_iou_score, precision, recal
 from seg.utils.accuracy import accuracy
 
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
+from seg.model.losses.focal_loss import FocalLoss
+from seg.model.losses.focal_tversky import FocalTverskyLoss
+from seg.model.losses.tversky import TverskyLoss
+from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
+
 
 class InferenceModule():
     r"""
@@ -220,7 +226,6 @@ class SegmentationMetrics(object):
         return iou, dice, acc, prec, rec, tp, fp, tn, fn
 
 
-
 def inference(model, loader, inferencer, loss_fn, test_type):
     '''
     Evaluate either test or validation set. Function is called per epoch. 
@@ -263,7 +268,44 @@ def inference(model, loader, inferencer, loss_fn, test_type):
             output = model(images)
 
         # new version
-        loss_val = loss_fn(output, gts, smooth = 0.001)
+        if isinstance(loss_fn, TverskyLoss):
+            loss_val = loss_fn(
+                inputs=output, 
+                targets=gts, 
+                smooth=0.001, 
+                alpha=None, # THIS WILL NEED FIXING 
+                beta=None, # THIS WILL NEED FIXING 
+                gamma=None # THIS WILL NEED FEXING 
+            )
+        elif isinstance(loss_fn, FocalTverskyLoss):
+            loss_val = loss_fn(
+                inputs=output, 
+                targets=gts, 
+                smooth=0.001, 
+                alpha=None, 
+                beta=None, 
+            )
+        elif isinstance(loss_fn, FocalLoss):
+            loss_val = loss_fn(
+                inputs=output, 
+                targets=gts, 
+                smooth=0.001, 
+                alpha=None, 
+                gamma=None,
+            )
+        elif isinstance(loss_fn, MultiScaleIoUBCELoss):
+            loss_val = loss_fn(
+                lateral_map_5 = F.interpolate(model.x_1_2, size=(256, 256)),
+                lateral_map_4 = F.interpolate(model.x_1_4, size=(256, 256)),
+                lateral_map_3 = F.interpolate(model.x_1_8, size=(256, 256)),
+                lateral_map_2 = F.interpolate(model.x_1_16, size=(256, 256)), 
+                gts = gts, 
+                epoch = 0,
+            )
+        else:
+            loss_val = loss_fn(output, gts, smooth=0.001) # note smooth not used for Weighted, also weight calls sigmoid 
+
+        # loss_val = loss_fn(output, gts, smooth = 0.001)
 
         # call inferencer function via calling the object itself and __call__
         iou, dice, acc, prec, rec, tp, fp, tn, fn = inferencer(gts, output)

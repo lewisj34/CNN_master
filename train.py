@@ -6,7 +6,11 @@ import time
 import logging 
 
 from pathlib import Path
+from seg.model.PraNet.lib.PraNet_Res2Net import PraNet
+from seg.model.SwinUNet.vision_transformer import SwinUnet
+from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
 from seg.model.transformer.create_model import create_transformer
+from seg.model.transformer.create_modelV2 import create_transformerV2
 from seg.utils.data.generate_npy import split_and_convert_to_npyV2
 from seg.utils.err_codes import crop_err1, crop_err2, crop_err3,resize_err1, resize_err2, resize_err3
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
@@ -29,7 +33,7 @@ from engineV2 import train_one_epochV2
 
 ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS', 'CVC_ColonDB', 'master']
 ALLOWABLE_MODELS = ["OldFusionNetwork", "SimplestFusionNetwork", "UNet_plain", \
-    "UNet_backboned", "just_trans"]
+    "UNet_backboned", "just_trans", "swinunet"]
 ALLOWABLE_CNN_MODELS = ['unet']
 ALLOWABLE_CNN_BACKBONES = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 
     'resnet152', 'vgg16', 'vgg19', 'densenet121', 'densenet161', 'densenet169', 
@@ -66,6 +70,7 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 @click.option('--lr_sched', type=str, default='warmpoly', help='step, poly, multistep, warmpoly')
 @click.option('--loss_type', type=str, default='iou', help='iou, weight, lovasz')
 @click.option('--best_loss_option', type=str, default='ALL')
+@click.option('--dataset_file_location', type=str, default=None, help='where is the dataset corresponding to `dataset` saved')
 def main(
     dataset,
     model_name,
@@ -93,9 +98,8 @@ def main(
     lr_sched,
     loss_type,
     best_loss_option,
+    dataset_file_location,
 ):
-
-    assert model_name in ALLOWABLE_MODELS, 'invalid model_name'
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'
     assert cnn_backbone in ALLOWABLE_CNN_BACKBONES, 'invalid cnn backbone'
@@ -179,6 +183,7 @@ def main(
         image_size = image_size,
         reimport_data = reimport_data, 
         num_classes = n_cls,
+        parent_dir = dataset_file_location,
     )
 
     # import model details for transformer 
@@ -288,6 +293,16 @@ def main(
         ).cuda()
     elif model_name == 'just_trans':
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
+    elif model_name == 'transV2':
+        model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
+        exit(1)
+    elif model_name == 'pranet':
+        raise ValueError(f'PraNet needs modification of train_one_epoch to handle its multilevel loss function.')
+        model = PraNet(channel=32).cuda()
+    elif model_name == 'swinunet':
+        model = SwinUnet().cuda()
+    else:
+        raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    
     ###########################################################################
 
@@ -490,6 +505,8 @@ def main(
         loss_fn = FocalLoss(nonlin='sigmoid')
     elif loss_type == "tversky":
         loss_fn = TverskyLoss(nonlin='sigmoid')
+    elif loss_type == "multiscaleIoUBCE":
+        loss_fn = MultiScaleIoUBCELoss(num_losses=4, epoch_unfreeze=3)
     else:
         raise NotImplementedError(f'Just put more elif structures in here.')
 

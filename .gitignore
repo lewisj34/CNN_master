@@ -15,3 +15,7 @@ test_cvc_clinic_db.csv
 test_cvc_colon_db.csv
 test_etis.csv
 test_kvasir.csv
+
+# PraNet
+seg/model/PraNet/
+configs/swin_tiny_patch4_window7_224_lite.yaml

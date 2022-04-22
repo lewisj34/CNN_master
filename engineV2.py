@@ -2,9 +2,13 @@ import logging
 import numpy as np
 import torch
 import time 
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
 
 from tqdm import tqdm
 from torch.autograd import Variable
+from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.tversky import TverskyLoss
@@ -67,10 +71,10 @@ def train_one_epochV2(
     train_loader, 
     valid_loader,
     test_loader,
-    model, 
+    model: nn.Module, 
     inferencer,
     num_classes,
-    optimizer,
+    optimizer: optim.Adam,
     batch_size,
     grad_norm, 
     best_loss,
@@ -78,7 +82,7 @@ def train_one_epochV2(
     checkpt_save_dir,
     speed_test,
     scheduler=None,
-    loss_fn=None,
+    loss_fn:nn.Module=None,
     loss_fn_params=None,
     eps=0.001,
     dataset='master', # only used to initiate what kind of test metric function is called
@@ -152,6 +156,15 @@ def train_one_epochV2(
                 smooth=eps, 
                 alpha=loss_fn_params['alpha'], 
                 gamma=loss_fn_params['gamma'],
+            )
+        elif isinstance(loss_fn, MultiScaleIoUBCELoss):
+            loss_val = loss_fn(
+                lateral_map_5 = F.interpolate(model.x_1_2, size=(256, 256)),
+                lateral_map_4 = F.interpolate(model.x_1_4, size=(256, 256)),
+                lateral_map_3 = F.interpolate(model.x_1_8, size=(256, 256)),
+                lateral_map_2 = F.interpolate(model.x_1_16, size=(256, 256)), 
+                gts = gts, 
+                epoch = curr_epoch,
             )
         else:
             loss_val = loss_fn(output, gts, smooth=eps) # note smooth not used for Weighted, also weight calls sigmoid 

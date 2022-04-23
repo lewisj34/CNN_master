@@ -8,7 +8,7 @@ from timm.models.vision_transformer import default_cfgs
 
 from .ViT import VisionTransformer
 from .decoder import DecoderLinear, MaskTransformer
-from .decoder_new import DecoderPlus
+from .decoder_new import DecoderPlus, DecoderMultiClass
 from .utils import checkpoint_filter_fn, padding, unpadding
 
 def create_vit(model_cfg):
@@ -66,6 +66,7 @@ class TransformerV2(nn.Module):
         encoder,
         decoder,
         n_cls,
+        num_outputs_trans=32,
     ):
         super().__init__()
         self.n_cls = n_cls
@@ -78,11 +79,12 @@ class TransformerV2(nn.Module):
         # 256x256
         self.use_decoderPlus = True
         print(f'Using decoderPlus: ', self.use_decoderPlus)
-        self.decoderPlus = DecoderPlus(
+        self.decoderPlus = DecoderMultiClass(
             input_size=(16,16), 
+            in_chans=num_outputs_trans,
             output_size=(256,256),
             inter_chans=32,
-            out_chans=1
+            out_chans=n_cls,
         )
 
     @torch.jit.ignore
@@ -163,8 +165,11 @@ def create_transformerV2(model_cfg, decoder='linear'):
     decoder_cfg["n_cls"] = model_cfg["n_cls"]
     decoder_cfg['d_model'] = model_cfg['d_model']
 
+    num_output_trans = 64
+    model_cfg['n_cls'] = num_output_trans
+    decoder_cfg['n_cls'] = num_output_trans
     encoder = create_vit(model_cfg)
     decoder = create_decoder(encoder, decoder_cfg)
-    model = TransformerV2(encoder, decoder, n_cls=model_cfg["n_cls"])
+    model = TransformerV2(encoder, decoder, n_cls=model_cfg["n_cls"], num_outputs_trans=num_output_trans)
 
     return model

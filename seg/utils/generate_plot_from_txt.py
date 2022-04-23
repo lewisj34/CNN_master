@@ -86,11 +86,15 @@ if __name__ == '__main__':
     #     'Without pretrained CNN'
     # )
 
-    test_iou_loss_path_CVC_ClinicDB = getMajorStatisticsFromSingleLossPath(
-        'results/OldFusionNetwork/OldFusionNetwork_9/test_iou_file.txt')
-    test_dice_loss_path_CVC_ClinicDB = getMajorStatisticsFromSingleLossPath(
-        'results/OldFusionNetwork/OldFusionNetwork_9/test_dice_file.txt')
-    valid_iou_loss_path_CVC_ClinicDB = getMajorStatisticsFromSingleLossPath(
-        'results/OldFusionNetwork/OldFusionNetwork_9/valid_iou_file.txt')
-    valid_dice_loss_path_CVC_ClinicDB = getMajorStatisticsFromSingleLossPath(
-        'results/OldFusionNetwork/OldFusionNetwork_9/valid_dice_file.txt')
+    iou_newTransformerWMoreClasses = getMajorStatisticsFromSingleLossPath(
+        'results/TransformerV2/TransformerV2_1/test_iou_file.txt')
+    dice_newTransformerWMoreClasses = getMajorStatisticsFromSingleLossPath(
+        'results/TransformerV2/TransformerV2_1/test_dice_file.txt')
+    iou_og_transformer_w_decoderPlus = getMajorStatisticsFromSingleLossPath(
+        'results/Transformer/Transformer_1/test_iou_file.txt')
+    dice_og_transformer_w_decoderPlus = getMajorStatisticsFromSingleLossPath(
+        'results/Transformer/Transformer_1/test_dice_file.txt')
+    iou_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
+        'results/Transformer/Transformer_2/test_iou_file.txt')
+    dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
+        'results/Transformer/Transformer_2/test_dice_file.txt')

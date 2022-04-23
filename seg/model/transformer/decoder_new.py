@@ -69,22 +69,68 @@ class DecoderPlus(nn.Module):
         x = self.final_conv(x)
         return x 
 
+class DecoderMultiClass(nn.Module):
+    def __init__(
+        self,
+        input_size=(16, 16),
+        in_chans=1,
+        output_size=(256, 256),
+        inter_chans=32,
+        out_chans=1,
+    ):
+        super(DecoderMultiClass, self).__init__()
+        assert input_size == (16, 16), \
+            f'input_size must be corresponding to [N, 1, 16, 16]' 
+            # haven't done for [N, 1, 32, 32] yet
+
+        self.output_size = output_size
+        self.up1 = UpMod(
+            in_channels = in_chans, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+        )
+        self.up2 = UpMod(
+            in_channels = inter_chans, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+        )
+        self.conv = nn.Conv2d(inter_chans, out_chans, kernel_size=1)
+        self.final_conv = nn.Conv2d(64, 1, kernel_size=1)
+    def forward(self, x):
+        # x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
+        x = self.up1(x)
+        x = self.up2(x)
+        x = self.conv(x)
+        # x = torch.cat([x, x_final_dec], dim=1)
+        x = self.final_conv(x)
+        return x 
 
 
 if __name__ == '__main__':
-    input = (1, 16, 16)
-    batch_size = 5
+    input = torch.randn((1, 32, 16, 16)).cuda()
 
-    from torchsummary import summary 
-    model = DecoderPlus(
-        input_size=(16,16),
+    decoder = DecoderMultiClass(
+        input_size=(16,16), 
+        in_chans=32,
         output_size=(256,256),
-        inter_chans=32, 
-        out_chans=1
-    )
+        inter_chans=32,
+        out_chans=1,
+    ).cuda()
 
-    summary(
-        model=model.cuda(),
-        input_size=input,
-        batch_size=batch_size
-    )
+    output = decoder(input)
+
+    # from torchsummary import summary 
+    # model = DecoderPlus(
+    #     input_size=(16,16),
+    #     output_size=(256,256),
+    #     inter_chans=32, 
+    #     out_chans=1
+    # )
+
+    # summary(
+    #     model=model.cuda(),
+    #     input_size=input,
+    #     batch_size=batch_size
+    # )

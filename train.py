@@ -295,7 +295,6 @@ def main(
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     elif model_name == 'transV2':
         model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
-        exit(1)
     elif model_name == 'pranet':
         raise ValueError(f'PraNet needs modification of train_one_epoch to handle its multilevel loss function.')
         model = PraNet(channel=32).cuda()

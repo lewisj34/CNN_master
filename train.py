@@ -351,11 +351,13 @@ def main(
         if batch_size < num_gpu:
             raise ValueError(f'batch_size: {batch_size} < num_gpu: {num_gpu}. Cannot run parralelized training.')
             exit(1)
-        model = torch.nn.DataParallel(model)
-        model = model.cuda()
-        print(f'Creating parallel training process. WARNING: This overwrites the model name and changes the name.')
-        print('Not inputting parallel training process right now. Too many problems with CE-YC-dlearn2.')
-        exit(1)
+        useParallel=False
+        if useParallel:
+            model = torch.nn.DataParallel(model)
+            model = model.cuda()
+            print(f'Creating parallel training process. WARNING: This overwrites the model name and changes the name.')
+            print('Not inputting parallel training process right now. Too many problems with CE-YC-dlearn2.')
+            exit(1)
 
     # optimzer stuffs 
     params = model.parameters()

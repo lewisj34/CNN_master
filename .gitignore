@@ -19,3 +19,9 @@ test_kvasir.csv
 # PraNet
 seg/model/PraNet/
 configs/swin_tiny_patch4_window7_224_lite.yaml
+
+# sddnet stuff 
+seg/model/SDDNet/
+
+# segmentation_models
+seg/model/segmentation_models_pytorch/

@@ -9,7 +9,8 @@ def plot_test_valid_loss(
     num_epochs, 
     save_dir='results/', 
     title='Loss Curve', 
-    save_name='loss_curve.png'
+    save_name='loss_curve.png',
+    showPlot=False,
 ):
     '''
     Plots the loss curve for test and valid losses. Losses must be in the form 
@@ -38,7 +39,11 @@ def plot_test_valid_loss(
     plt.title(title)
     plt.legend()
     plt.savefig(f'{save_dir}/' + save_name)
-    plt.show()
+
+    if showPlot:
+        plt.show()
+    else:
+        plt.close()
 
 
 
@@ -49,6 +54,7 @@ def visualizeModelOutputfromDataLoader(
     save_dir='results/',
     title='Model Output and Visualization',
     save_name='model_visualization.png',
+    showPlot=False,
 ):
     '''
     THIS IS THE FINAL VERSION. 
@@ -113,7 +119,11 @@ def visualizeModelOutputfromDataLoader(
         ax[0, 2].set_title(f'Ground Truth')
     fig.suptitle(title) 
     plt.savefig(f'{save_dir}/' + save_name)
-    plt.show()
+    
+    if showPlot:
+        plt.show()
+    else:
+        plt.close()
 
 
 # def getRandomSampleFromBatch(

@@ -15,7 +15,7 @@ from seg.utils.data.generate_npy import split_and_convert_to_npyV2
 from seg.utils.err_codes import crop_err1, crop_err2, crop_err3,resize_err1, resize_err2, resize_err3
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
 from seg.model.CNN.CNN_plus import UNet_plain
-from seg.model.Fusion.FusionNetwork import OldFusionNetwork, SimplestFusionNetwork
+from seg.model.Fusion.FusionNetwork import OldFusionNetwork, SimplestFusionNetwork, NewFusionNetwork
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.iou_loss import IoULoss
 from seg.model.losses.weighted import Weighted
@@ -60,7 +60,7 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 @click.option('--n_cls', type=int, default=1)
 @click.option('--save_dir', type=str, default='seg/data')
 @click.option('--num_epochs', type=int, default=1)
-@click.option('--learning_rate', type=float, default=7e-5) # old: 7e-5 works way better than the new 10e-4
+@click.option('--learning_rate', type=float, default=2.1052e-05) # old: 7e-5
 @click.option('--batch_size', type=int, default=16)
 @click.option('--model_checkpoint_name', type=str, default=None)
 @click.option('--speed_test', type=bool, default=False, help='if True, runs FPS measurements of network every 5 epochs')
@@ -300,6 +300,20 @@ def main(
         model = PraNet(channel=32).cuda()
     elif model_name == 'swinunet':
         model = SwinUnet().cuda()
+    elif model_name == 'NewFusionNetwork':
+        model = NewFusionNetwork(
+            cnn_model_cfg,
+            trans_model_cfg,
+            cnn_pretrained=False,
+            with_fusion=True,
+        ).cuda()
+    elif model_name == 'EfficientNetHybrid':
+        from z import NewCNN
+        model = NewCNN(
+            encoder_channels = (3, 64, 48, 80, 224, 640),
+            decoder_channels = (256, 128, 64, 32, 16),
+            num_classes=1,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    
@@ -599,6 +613,7 @@ def main(
             print('Time per epoch: {:.4f} (s)\n'.format(end - start))    
             logging.info('Time per epoch: {:.4f} (s)\n'.format(end - start)) 
 
+    print('Plotting and writing results files...')
     if dataset != 'master':
         plot_test_valid_loss(
             test_loss_list, 
@@ -773,6 +788,7 @@ def main(
         Kvasir_gt_root = save_dir + "/mask_Kvasir_test.npy"
         test_dl = getTestDatasetForVisualization(Kvasir_image_root, Kvasir_gt_root)
         visualizeModelOutputfromDataLoader(test_dl, model, 4,save_dir=model_dir, title='Kvasir Model Visualization', save_name='Kvasir_model_visual.png')
+    print('Plotting and data write complete.')
     ###########################################################################
     ###########################################################################
 

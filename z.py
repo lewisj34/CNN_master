@@ -245,19 +245,21 @@ def init_weights(m):
         nn.init.constant_(m.bias, 0)
         nn.init.constant_(m.weight, 1.0)
 
-class NewCNN(nn.Module):
+class EffNet_B7(nn.Module):
     def __init__(
         self,
         encoder_channels=(3, 64, 48, 80, 224, 640),
         decoder_channels=(256, 128, 64, 32, 16), 
+        stage_idxs=(11, 18, 38, 55),
+        model_name='efficientnet-b7',
         num_classes=1,
         activation=None,
     ):
         super().__init__()
         self.encoder = EfficientNetEncoder(
-            stage_idxs=(11, 18, 38, 55),
+            stage_idxs=stage_idxs,
             out_channels=encoder_channels,
-            model_name='efficientnet-b7',
+            model_name=model_name,
             depth=5,
         )
         self.decoder = SCSE_Decoder(
@@ -297,6 +299,117 @@ class NewCNN(nn.Module):
                 f"Wrong input shape height={h}, width={w}. Expected image height and width "
                 f"divisible by {output_stride}. Consider pad your images to shape ({new_h}, {new_w})."
             )
+
+class EffNet_B4(nn.Module):
+    def __init__(
+        self,
+        encoder_channels=(3, 48, 32, 56, 160, 448),
+        decoder_channels=(256, 128, 64, 32, 16), 
+        stage_idxs=(6, 10, 22, 32),
+        model_name='efficientnet-b4',
+        num_classes=1,
+        activation=None,
+    ):
+        super().__init__()
+        self.encoder = EfficientNetEncoder(
+            stage_idxs=stage_idxs,
+            out_channels=encoder_channels,
+            model_name=model_name,
+            depth=5,
+        )
+        self.decoder = SCSE_Decoder(
+            encoder_channels=encoder_channels,
+            decoder_channels=decoder_channels,
+            n_blocks=5,
+        )
+        self.segmentation_head = SegmentationHead(
+            in_channels=decoder_channels[-1],
+            out_channels=num_classes,
+            activation=activation,
+            kernel_size=3,
+        )
+        print(f'Initializing weights...')
+        self.apply(init_weights)
+
+    def forward(self, x):
+        """Sequentially pass `x` trough model`s encoder, decoder and heads"""
+
+        self.check_input_shape(x)
+
+        features = self.encoder(x)
+        decoder_output = self.decoder(*features)
+
+        masks = self.segmentation_head(decoder_output)
+
+        return masks
+
+    def check_input_shape(self, x):
+
+        h, w = x.shape[-2:]
+        output_stride = self.encoder.output_stride
+        if h % output_stride != 0 or w % output_stride != 0:
+            new_h = (h // output_stride + 1) * output_stride if h % output_stride != 0 else h
+            new_w = (w // output_stride + 1) * output_stride if w % output_stride != 0 else w
+            raise RuntimeError(
+                f"Wrong input shape height={h}, width={w}. Expected image height and width "
+                f"divisible by {output_stride}. Consider pad your images to shape ({new_h}, {new_w})."
+            )
+
+class EffNet_B3(nn.Module):
+    def __init__(
+        self,
+        encoder_channels=(3, 40, 32, 48, 136, 384),
+        decoder_channels=(256, 128, 64, 32, 16), 
+        stage_idxs=(5, 8, 18, 26),
+        model_name='efficientnet-b3',
+        num_classes=1,
+        activation=None,
+    ):
+        super().__init__()
+        self.encoder = EfficientNetEncoder(
+            stage_idxs=stage_idxs,
+            out_channels=encoder_channels,
+            model_name=model_name,
+            depth=5,
+        )
+        self.decoder = SCSE_Decoder(
+            encoder_channels=encoder_channels,
+            decoder_channels=decoder_channels,
+            n_blocks=5,
+        )
+        self.segmentation_head = SegmentationHead(
+            in_channels=decoder_channels[-1],
+            out_channels=num_classes,
+            activation=activation,
+            kernel_size=3,
+        )
+        print(f'Initializing weights...')
+        self.apply(init_weights)
+
+    def forward(self, x):
+        """Sequentially pass `x` trough model`s encoder, decoder and heads"""
+
+        self.check_input_shape(x)
+
+        features = self.encoder(x)
+        decoder_output = self.decoder(*features)
+
+        masks = self.segmentation_head(decoder_output)
+
+        return masks
+
+    def check_input_shape(self, x):
+
+        h, w = x.shape[-2:]
+        output_stride = self.encoder.output_stride
+        if h % output_stride != 0 or w % output_stride != 0:
+            new_h = (h // output_stride + 1) * output_stride if h % output_stride != 0 else h
+            new_w = (w // output_stride + 1) * output_stride if w % output_stride != 0 else w
+            raise RuntimeError(
+                f"Wrong input shape height={h}, width={w}. Expected image height and width "
+                f"divisible by {output_stride}. Consider pad your images to shape ({new_h}, {new_w})."
+            )
+
 
     
     # def init_weights(self):
@@ -341,7 +454,7 @@ if __name__ == '__main__':
     #     n_blocks=5,
     # )
 
-    net = NewCNN(
+    net = EffNet_B7(
         encoder_channels = (3, 64, 48, 80, 224, 640),
         decoder_channels = (256, 128, 64, 32, 16),
         num_classes=1,

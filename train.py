@@ -307,10 +307,24 @@ def main(
             cnn_pretrained=False,
             with_fusion=True,
         ).cuda()
-    elif model_name == 'EfficientNetHybrid':
-        from z import NewCNN
-        model = NewCNN(
+    elif model_name == 'EffNet_B7':
+        from z import EffNet_B7
+        model = EffNet_B7(
             encoder_channels = (3, 64, 48, 80, 224, 640),
+            decoder_channels = (256, 128, 64, 32, 16),
+            num_classes=1,
+        ).cuda()
+    elif model_name == 'EffNet_B4':
+        from z import EffNet_B4
+        model = EffNet_B4(
+            encoder_channels = (3, 48, 32, 56, 160, 448),
+            decoder_channels = (256, 128, 64, 32, 16),
+            num_classes=1,
+        ).cuda()
+    elif model_name == 'EffNet_B3':
+        from z import EffNet_B3
+        model = EffNet_B3(
+            encoder_channels = (3, 40, 32, 48, 136, 384),
             decoder_channels = (256, 128, 64, 32, 16),
             num_classes=1,
         ).cuda()

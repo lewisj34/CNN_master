@@ -74,9 +74,65 @@ def getMajorStatisticsFromSingleLossPath(loss_path):
     print(f'\tmax loss: {np.max(loss_data)}')
     print(f'\tmean loss between 80 and 100 epochs: {np.mean(loss_data[80:])}')
 
+def getAllDatasetStatisticsFromDir(dir):
+    valid_iou_path = dir + '/test_iou_file.txt'
+    valid_dice_path = dir + '/test_dice_file.txt'
+    valid_loss_path = dir + '/test_loss_file.txt'
+
+    tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+    for i in range(len(tests)):
+        print(tests[i])
+        iou_path = dir + '/test_' + tests[i] + '_iou_file.txt'
+        dice_path = dir + '/test_' + tests[i] + '_dice_file.txt'
+        iou_data = np.loadtxt(iou_path)
+        dice_data = np.loadtxt(dice_path)
+        print(f'\tmax iou loss: {np.max(iou_data)}')
+        print(f'\tmean iou loss between 80 and 100 epochs: {np.mean(iou_data[80:])}')
+        print(f'\tmax dice loss: {np.max(dice_data)}')
+        print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[80:])}')
+
+def getAllDatasetStatisticsFromListDir(list_dirs: list):
+    tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+    ious_avg = np.zeros((len(tests), len(list_dirs)))
+    ious_max = np.zeros((len(tests), len(list_dirs)))
+    dice_max = np.zeros((len(tests), len(list_dirs)))
+    dice_avg = np.zeros((len(tests), len(list_dirs)))
+    for j in range(len(list_dirs)):
+        dir = list_dirs[j]
+        valid_iou_path = dir + '/test_iou_file.txt'
+        valid_dice_path = dir + '/test_dice_file.txt'
+        valid_loss_path = dir + '/test_loss_file.txt'
+
+        
+        for i in range(len(tests)): # ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+            print(tests[i])
+            iou_path = dir + '/test_' + tests[i] + '_iou_file.txt'
+            dice_path = dir + '/test_' + tests[i] + '_dice_file.txt'
+            iou_data = np.loadtxt(iou_path)
+            dice_data = np.loadtxt(dice_path)
+            print(f'\tmax iou loss: {np.max(iou_data)}')
+            print(f'\tmean iou loss between 80 and 100 epochs: {np.mean(iou_data[80:])}')
+            print(f'\tmax dice loss: {np.max(dice_data)}')
+            print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[80:])}')
+            ious_max[i, j] = np.max(iou_data)
+            ious_avg[i, j] = np.mean(iou_data[80:])
+            dice_max[i, j] = np.max(dice_data)
+            dice_avg[i, j] = np.mean(dice_data[80:])
+    import pandas as pd 
+    import os
+    for i in range(len(list_dirs)):
+        list_dirs[i] = os.path.basename(list_dirs[i])
+    pd.DataFrame(ious_max).to_csv('ious_max.csv', header=list_dirs)
+    pd.DataFrame(dice_max).to_csv('dice_max.csv', header=list_dirs)
+    # pd.DataFrame(ious_max).to_csv('ious.csv', header=list_dirs)
+    # pd.DataFrame(ious_max).to_csv('ious.csv', header=list_dirs)
+    print(ious_max)
+    print(ious_avg)
+    print(dice_max)
+    print(dice_avg)
 if __name__ == '__main__':
-    iou_loss1 = 'results/OldFusionNetwork/OldFusionNetwork_3/test_dice_file.txt'
-    iou_loss2 = 'results/OldFusionNetwork/OldFusionNetwork_4/test_dice_file.txt'
+    # iou_loss1 = 'results/OldFusionNetwork/OldFusionNetwork_3/test_dice_file.txt'
+    # iou_loss2 = 'results/OldFusionNetwork/OldFusionNetwork_4/test_dice_file.txt'
 
     # generateDualLossPlot(
     #     iou_loss1, 
@@ -86,15 +142,26 @@ if __name__ == '__main__':
     #     'Without pretrained CNN'
     # )
 
-    iou_newTransformerWMoreClasses = getMajorStatisticsFromSingleLossPath(
-        'results/TransformerV2/TransformerV2_1/test_iou_file.txt')
-    dice_newTransformerWMoreClasses = getMajorStatisticsFromSingleLossPath(
-        'results/TransformerV2/TransformerV2_1/test_dice_file.txt')
-    iou_og_transformer_w_decoderPlus = getMajorStatisticsFromSingleLossPath(
-        'results/Transformer/Transformer_1/test_iou_file.txt')
-    dice_og_transformer_w_decoderPlus = getMajorStatisticsFromSingleLossPath(
-        'results/Transformer/Transformer_1/test_dice_file.txt')
-    iou_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
-        'results/Transformer/Transformer_2/test_iou_file.txt')
-    dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
-        'results/Transformer/Transformer_2/test_dice_file.txt')
+    # iou_newTransformerWMoreClasses = getMajorStatisticsFromSingleLossPath(
+    #     'results/TransformerV2/TransformerV2_1/test_iou_file.txt')
+    # dice_newTransformerWMoreClasses = getMajorStatisticsFromSingleLossPath(
+    #     'results/TransformerV2/TransformerV2_1/test_dice_file.txt')
+    # iou_og_transformer_w_decoderPlus = getMajorStatisticsFromSingleLossPath(
+    #     'results/Transformer/Transformer_1/test_iou_file.txt')
+    # dice_og_transformer_w_decoderPlus = getMajorStatisticsFromSingleLossPath(
+    #     'results/Transformer/Transformer_1/test_dice_file.txt')
+    # iou_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
+    #     'results/Transformer/Transformer_2/test_iou_file.txt')
+    # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
+    #     'results/Transformer/Transformer_2/test_dice_file.txt')
+
+    getAllDatasetStatisticsFromDir(dir='results/EffNetB_7/EffNet_B7_1')
+    getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
+    getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
+    dirs = [
+        'results/EffNet_B3/EffNet_B3_1', 
+        'results/EffNet_B4/EffNet_B4_1', 
+        'results/EffNetB_7/EffNet_B7_1',
+        'results/UNet_plain_1'
+    ]
+    getAllDatasetStatisticsFromListDir(dirs)

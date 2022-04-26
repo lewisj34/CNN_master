@@ -25,3 +25,4 @@ seg/model/SDDNet/
 
 # segmentation_models
 seg/model/segmentation_models_pytorch/
+ious_max_EffNetsandUNetComp.csv

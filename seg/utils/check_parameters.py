@@ -28,7 +28,14 @@ def count_parameters(model):
         params = parameter.numel()
         table.add_row([name, params])
         total_params+=params
-    print(table)
-    print(f"Total Trainable Params: {total_params}")
+    # print(table)
+    print(f"Total Trainable Params: {total_params/1000000}M")
     return total_params
     
+if __name__ == '__main__':
+    from z import EffNet_B3, EffNet_B4, EffNet_B7
+    from seg.model.CNN.CNN import CNN_BRANCH
+    count_parameters(EffNet_B3())
+    count_parameters(EffNet_B4())
+    count_parameters(EffNet_B7())
+    count_parameters(CNN_BRANCH(3, 1, 16))

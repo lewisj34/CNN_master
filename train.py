@@ -44,7 +44,7 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 #  python train.py --num_epochs 20 --resume '/home/john/Documents/Dev_Linux/segmentation/trans_isolated/seg/current_checkpoints/Transformer/Transformer-8.pth'
 
 @click.command(help='')
-@click.option('--dataset', type=str, default='kvasir')
+@click.option('--dataset', type=str, default='master')
 @click.option('--model_name', type=str, default='OldFusionNetwork') 
 @click.option('--backbone', type=str, default='vit_base_patch16_384')
 @click.option('--decoder', type=str, default='linear')
@@ -327,6 +327,15 @@ def main(
             encoder_channels = (3, 40, 32, 48, 136, 384),
             decoder_channels = (256, 128, 64, 32, 16),
             num_classes=1,
+        ).cuda()
+    elif model_name == 'zedNet':
+        from seg.model.zed.zedNet import zedNet
+        model = zedNet(
+            n_channels=3, 
+            n_classes=1, 
+            patch_size=16,
+            bilinear=True,
+            attention=True, 
         ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')

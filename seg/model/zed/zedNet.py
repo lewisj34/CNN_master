@@ -32,10 +32,22 @@ class zedNet(nn.Module):
             if attention==True:
                 raise ValueError(f'patch_size 32 not supported for attention yet ')
 
-        self.up1 = UpAttention(1024 // factor, 1024 // factor, 512 // factor, bilinear)
-        self.up2 = UpAttention(512 // factor, 256, 256 // factor, bilinear)
-        self.up3 = UpAttention(256 // factor, 128, 128 // factor, bilinear)
-        self.up4 = UpAttention(128 // factor, 64, 64, bilinear)
+        skip_cxns_chans = [1024 // factor, 256, 128, 64]
+        # using SCSE attention for all of them 
+        # self.up1 = UpAttention(1024 // factor, skip_cxns_chans[0], 512 // factor, bilinear)
+        # self.up2 = UpAttention(512 // factor, skip_cxns_chans[1], 256 // factor, bilinear)
+        # self.up3 = UpAttention(256 // factor, skip_cxns_chans[2], 128 // factor, bilinear)
+        # self.up4 = UpAttention(128 // factor, skip_cxns_chans[3], 64, bilinear)
+
+        # using SCSE for just the last one and normal for the rest 
+
+        self.up1 = Up(1024, 512 // factor, bilinear)
+        self.up2 = Up(512, 256 // factor, bilinear)
+        self.att1 = SCSEModule(in_channels=256//factor, reduction=16)
+        self.up3 = Up(256, 128 // factor, bilinear)
+        self.att2 = NouveauAttention(64, reduction=2, AvgPoolKernelSize=11, AvgPoolPadding=5)
+        self.up4 = Up(128, 64, bilinear)
+        self.att3 = NouveauAttention(64, reduction=2, AvgPoolKernelSize=31, AvgPoolPadding=15)
 
         self.outc = OutConv(64, n_classes)
 
@@ -65,8 +77,11 @@ class zedNet(nn.Module):
                 
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
+        x = self.att1(x)
         x = self.up3(x, x2)
+        x = self.att2(x)
         x = self.up4(x, x1)
+        x = self.att3(x)
         logits = self.outc(x) 
         return logits
 

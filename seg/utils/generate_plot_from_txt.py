@@ -131,8 +131,8 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list):
     print(dice_max)
     print(dice_avg)
 if __name__ == '__main__':
-    # iou_loss1 = 'results/OldFusionNetwork/OldFusionNetwork_3/test_dice_file.txt'
-    # iou_loss2 = 'results/OldFusionNetwork/OldFusionNetwork_4/test_dice_file.txt'
+    iou_loss1 = 'results/OldFusionNetwork/OldFusionNetwork_3/test_dice_file.txt'
+    iou_loss2 = 'results/OldFusionNetwork/OldFusionNetwork_4/test_dice_file.txt'
 
     # generateDualLossPlot(
     #     iou_loss1, 
@@ -155,13 +155,13 @@ if __name__ == '__main__':
     # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
     #     'results/Transformer/Transformer_2/test_dice_file.txt')
 
-    getAllDatasetStatisticsFromDir(dir='results/EffNetB_7/EffNet_B7_1')
-    getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
-    getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
-    dirs = [
-        'results/EffNet_B3/EffNet_B3_1', 
-        'results/EffNet_B4/EffNet_B4_1', 
-        'results/EffNetB_7/EffNet_B7_1',
-        'results/UNet_plain_1'
-    ]
-    getAllDatasetStatisticsFromListDir(dirs)
+    getAllDatasetStatisticsFromListDir(['results/NewFusionNetwork/NewFusionNetwork_1.5'])
+    # getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
+    # getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
+    # dirs = [
+    #     'results/EffNet_B3/EffNet_B3_1', 
+    #     'results/EffNet_B4/EffNet_B4_1', 
+    #     'results/EffNetB_7/EffNet_B7_1',
+    #     'results/UNet_plain_1'
+    # ]
+    # getAllDatasetStatisticsFromListDir(dirs)

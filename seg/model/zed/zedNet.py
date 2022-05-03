@@ -100,3 +100,6 @@ class zedNet(nn.Module):
 
 
 
+if __name__ == '__main__':
+    from torchsummary import summary
+    summary(model=zedNet(3, 1, 16, True, True).cuda())

@@ -1,36 +1,24 @@
 import torch 
 import numpy as np 
 
-class AverageMeter(object):
-    """Computes and stores the average and current value.
-
-    Examples::
-        >>> # Initialize a meter to record loss
-        >>> losses = AverageMeter()
-        >>> # Update meter after every minibatch update
-        >>> losses.update(loss_value, batch_size)
-    """
-
-    def __init__(self, num=40):
-        self.num = num
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-        self.losses = []
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-        self.losses.append(val)
-
-    def show(self):
-        return torch.mean(torch.stack(self.losses[np.maximum(len(self.losses)-self.num, 0):]))
+from seg.utils.check_parameters import count_parameters
 
 if __name__ == '__main__':
-    print(f'hello world ')
+    from seg.model.CNN.CNN import CNN_BRANCH
+    from seg.model.zed.zedNet import zedNet
+    count_parameters(
+        CNN_BRANCH(
+            n_channels=3,
+            n_classes=1, 
+            patch_size=16,
+        )
+    )
+
+    count_parameters(
+        zedNet(
+            n_channels=3,
+            n_classes=1,
+            patch_size=16
+        )
+    )
+

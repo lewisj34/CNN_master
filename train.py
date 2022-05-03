@@ -337,6 +337,20 @@ def main(
             bilinear=True,
             attention=True, 
         ).cuda()
+    elif model_name == 'fusion_zed':
+        from seg.model.Fusion.NewFusionNetwork import ZedFusionNetwork
+        model = ZedFusionNetwork(
+            cnn_model_cfg,
+            trans_model_cfg,
+            True,
+        ).cuda()
+    elif model_name == 'new_fusion_zed':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetwork
+        model = NewZedFusionNetwork(
+            cnn_model_cfg,
+            trans_model_cfg,
+            with_fusion=True,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    
@@ -351,13 +365,13 @@ def main(
         if batch_size < num_gpu:
             raise ValueError(f'batch_size: {batch_size} < num_gpu: {num_gpu}. Cannot run parralelized training.')
             exit(1)
-        useParallel=False
+        useParallel=True
         if useParallel:
             model = torch.nn.DataParallel(model)
             model = model.cuda()
             print(f'Creating parallel training process. WARNING: This overwrites the model name and changes the name.')
-            print('Not inputting parallel training process right now. Too many problems with CE-YC-dlearn2.')
-            exit(1)
+            # print('Not inputting parallel training process right now. Too many problems with CE-YC-dlearn2.')
+            # exit(1)
 
     # optimzer stuffs 
     params = model.parameters()

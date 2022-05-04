@@ -91,7 +91,7 @@ def getAllDatasetStatisticsFromDir(dir):
         print(f'\tmax dice loss: {np.max(dice_data)}')
         print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[80:])}')
 
-def getAllDatasetStatisticsFromListDir(list_dirs: list):
+def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=80, end_epoch=None):
     tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
     ious_avg = np.zeros((len(tests), len(list_dirs)))
     ious_max = np.zeros((len(tests), len(list_dirs)))
@@ -112,12 +112,23 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list):
             dice_data = np.loadtxt(dice_path)
             print(f'\tmax iou loss: {np.max(iou_data)}')
             print(f'\tmax dice loss: {np.max(dice_data)}')
-            print(f'\tmean iou loss between 80 and 100 epochs: {np.mean(iou_data[80:])}')
-            print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[80:])}')
-            ious_max[i, j] = np.max(iou_data)
-            ious_avg[i, j] = np.mean(iou_data[80:])
-            dice_max[i, j] = np.max(dice_data)
-            dice_avg[i, j] = np.mean(dice_data[80:])
+            if end_epoch==None:
+                print(f'\tmean iou loss between {start_epoch} and end epochs: {np.mean(iou_data[start_epoch:])}')
+                print(f'\tmean dice loss between {start_epoch} and end epochs: {np.mean(dice_data[start_epoch:])}')
+            else: 
+                print(f'\tmean iou loss between {start_epoch} and {end_epoch} epochs: {np.mean(iou_data[start_epoch:end_epoch])}')
+                print(f'\tmean dice loss between {start_epoch} and {end_epoch} epochs: {np.mean(dice_data[start_epoch:end_epoch])}')
+            if end_epoch == None:
+                ious_max[i, j] = np.max(iou_data)
+                ious_avg[i, j] = np.mean(iou_data[start_epoch:])
+                dice_max[i, j] = np.max(dice_data)
+                dice_avg[i, j] = np.mean(dice_data[start_epoch:])
+            else:
+                ious_max[i, j] = np.max(iou_data)
+                ious_avg[i, j] = np.mean(iou_data[start_epoch:end_epoch])
+                dice_max[i, j] = np.max(dice_data)
+                dice_avg[i, j] = np.mean(dice_data[start_epoch:end_epoch])
+
     import pandas as pd 
     import os
     for i in range(len(list_dirs)):
@@ -155,7 +166,7 @@ if __name__ == '__main__':
     # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
     #     'results/Transformer/Transformer_2/test_dice_file.txt')
 
-    getAllDatasetStatisticsFromListDir(['results/OldFusionNetwork/OldFusionNetwork_1'])
+    getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_6'], start_epoch=600, end_epoch=650)
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
     # dirs = [

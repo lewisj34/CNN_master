@@ -69,20 +69,23 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         #  pull that info. but yeah. wahtever rn lol 
         self.trans_branch = create_transformerV2(trans_model_cfg, 
             decoder='linear')
+        num_output_trans = trans_model_cfg['num_output_trans']
+        print(f'num_output_trans: {num_output_trans}')
+        # num_output_trans = 64
 
         self.with_fusion = with_fusion
         if self.with_fusion:
             self.fuse_1_2 = MiniEncoderFuse( # NOTE: 64 classes trans output manually input here 
-                self.cnn_branch.x_1_2.shape[1], 64, 64, 1, stage = '1_2')
+                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
             self.fuse_1_4 = MiniEncoderFuse(
-                self.cnn_branch.x_1_4.shape[1], 64, 64, 1, stage='1_4')
+                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
             self.fuse_1_8 = MiniEncoderFuse(
-                self.cnn_branch.x_1_8.shape[1], 64, 64, 1, stage='1_8')
+                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
             self.fuse_1_16 = MiniEncoderFuse(
-                self.cnn_branch.x_1_16.shape[1], 64, 64, 1, stage='1_16')
+                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
             if self.patch_size == 32:
                 self.fuse_1_32 = MiniEncoderFuse(
-                    self.cnn_branch.x_1_32.shape[1], 64, 64, 1, stage='1_32')
+                    self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
 
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)

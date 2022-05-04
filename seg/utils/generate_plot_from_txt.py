@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
     #     'results/Transformer/Transformer_2/test_dice_file.txt')
 
-    getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_6'], start_epoch=600, end_epoch=650)
+    getAllDatasetStatisticsFromListDir(['results/OldFusionNetwork/OldFusionNetwork_1', 'results/ZedFusionNetwork/ZedFusionNetwork_2'])
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
     # dirs = [

@@ -97,7 +97,9 @@ class DecoderMultiClass(nn.Module):
             scale_factor=4,
         )
         self.conv = nn.Conv2d(inter_chans, out_chans, kernel_size=1)
-        self.final_conv = nn.Conv2d(64, 1, kernel_size=1)
+        print(f'num_outputs in DecoderMultiClass: {in_chans}')
+        print(f'WARNING: This value above should be the same as the transformer and fusion model. Check to see if its right.')
+        self.final_conv = nn.Conv2d(in_chans, 1, kernel_size=1) #idk why we have this named in_chans but in_chans legit just becomes num_output_trans
     def forward(self, x):
         # x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
         x = self.up1(x)

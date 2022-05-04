@@ -71,6 +71,8 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 @click.option('--loss_type', type=str, default='iou', help='iou, weight, lovasz')
 @click.option('--best_loss_option', type=str, default='ALL')
 @click.option('--dataset_file_location', type=str, default=None, help='where is the dataset corresponding to `dataset` saved')
+@click.option('--num_output_trans', type=str, default=32, help='where is the dataset corresponding to `dataset` saved')
+
 def main(
     dataset,
     model_name,
@@ -99,6 +101,7 @@ def main(
     loss_type,
     best_loss_option,
     dataset_file_location,
+    num_output_trans,
 ):
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'
@@ -220,6 +223,9 @@ def main(
 
     print(f'trans_model_cfg:\n {trans_model_cfg}')
     print(f'cnn_model_cfg:\n {cnn_model_cfg}')
+
+    cnn_model_cfg['num_output_trans'] = num_output_trans
+    trans_model_cfg['num_output_trans'] = num_output_trans
 
     if model_name == "OldFusionNetwork":
         model = OldFusionNetwork(
@@ -347,6 +353,13 @@ def main(
     elif model_name == 'new_fusion_zed':
         from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetwork
         model = NewZedFusionNetwork(
+            cnn_model_cfg,
+            trans_model_cfg,
+            with_fusion=True,
+        ).cuda()
+    elif model_name == 'NewZedFusionNetworkNoOneHalf':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkNoOneHalf
+        model = NewZedFusionNetworkNoOneHalf(
             cnn_model_cfg,
             trans_model_cfg,
             with_fusion=True,

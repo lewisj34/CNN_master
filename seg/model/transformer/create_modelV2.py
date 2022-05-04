@@ -165,7 +165,11 @@ def create_transformerV2(model_cfg, decoder='linear'):
     decoder_cfg["n_cls"] = model_cfg["n_cls"]
     decoder_cfg['d_model'] = model_cfg['d_model']
 
-    num_output_trans = 64
+
+    num_output_trans = model_cfg['num_output_trans']
+    print(f'num_output_trans in create_transformer: {num_output_trans}')
+    # num_output_trans = 64
+
     model_cfg['n_cls'] = num_output_trans
     decoder_cfg['n_cls'] = num_output_trans
     encoder = create_vit(model_cfg)

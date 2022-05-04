@@ -112,6 +112,11 @@ def generate_split_txt_files_master(
 
         # shuffle 
         metadata_df = metadata_df.sample(frac=1).reset_index(drop=True)
+        # metadata_df = metadata_df.sample(frac=1); print(f'Shuffling again.')
+        # metadata_df = metadata_df.sample(frac=1); print(f'Shuffling again.')
+        # metadata_df = metadata_df.sample(frac=1); print(f'Shuffling again.')
+        # metadata_df = metadata_df.sample(frac=1); print(f'Shuffling again.')
+
 
         # we're not going to split the train data for the master dataset, like 
         # we have before. we're just going to sample 20-30% of the train dataset

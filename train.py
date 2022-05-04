@@ -364,6 +364,15 @@ def main(
             trans_model_cfg,
             with_fusion=True,
         ).cuda()
+    elif model_name == 'rahmat':
+        from seg.model.rahmat.rFusion.rFusionNetwork import r_OldFusionNetwork
+        model = r_OldFusionNetwork(
+            cnn_model_cfg, 
+            trans_model_cfg,
+            cnn_pretrained=False,
+            with_fusion=True,
+            with_aspp=False,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

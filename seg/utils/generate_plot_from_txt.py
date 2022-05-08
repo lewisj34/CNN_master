@@ -87,9 +87,9 @@ def getAllDatasetStatisticsFromDir(dir):
         iou_data = np.loadtxt(iou_path)
         dice_data = np.loadtxt(dice_path)
         print(f'\tmax iou loss: {np.max(iou_data)}')
-        print(f'\tmean iou loss between 80 and 100 epochs: {np.mean(iou_data[80:])}')
+        print(f'\tmean iou loss between 80 and 100 epochs: {np.mean(iou_data[750:])}')
         print(f'\tmax dice loss: {np.max(dice_data)}')
-        print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[80:])}')
+        print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[750:])}')
 
 def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=80, end_epoch=None):
     tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
     #     'results/Transformer/Transformer_2/test_dice_file.txt')
 
-    getAllDatasetStatisticsFromListDir(['results/OldFusionNetwork/OldFusionNetwork_1', 'results/ZedFusionNetwork/ZedFusionNetwork_2'])
+    getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_11'])
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
     # dirs = [

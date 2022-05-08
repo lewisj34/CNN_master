@@ -48,10 +48,11 @@ train.py, but im too tired to try and figure out how to work that and were \
 running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         # need to do something or pull information from the trans_model_cfg and
         #  pull that info. but yeah. wahtever rn lol 
-        self.trans_branch = create_transformerV2(trans_model_cfg, 
-            decoder='linear')
         num_output_trans = trans_model_cfg['num_output_trans']
         print(f'num_output_trans: {num_output_trans}')
+
+        self.trans_branch = create_transformerV2(trans_model_cfg, 
+            decoder='linear')
         # num_output_trans = 64
 
         self.with_fusion = with_fusion

@@ -71,7 +71,7 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 @click.option('--loss_type', type=str, default='iou', help='iou, weight, lovasz')
 @click.option('--best_loss_option', type=str, default='ALL')
 @click.option('--dataset_file_location', type=str, default=None, help='where is the dataset corresponding to `dataset` saved')
-@click.option('--num_output_trans', type=str, default=32, help='where is the dataset corresponding to `dataset` saved')
+@click.option('--num_output_trans', type=int, default=64, help='where is the dataset corresponding to `dataset` saved')
 
 def main(
     dataset,

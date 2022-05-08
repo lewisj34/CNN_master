@@ -373,6 +373,16 @@ def main(
             with_fusion=True,
             with_aspp=False,
         ).cuda()
+    elif model_name == 'reduced_unet_fusion':
+        # new fusion just with reduced factor of 3 instead of 2 
+        from seg.model.Fusion.NewFusionReducedUnetCapacity import NewFusionNetworkReducedUNet
+        model = NewFusionNetworkReducedUNet(
+            cnn_model_cfg,
+            trans_model_cfg,
+            with_fusion=True,
+        ).cuda()
+        
+
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

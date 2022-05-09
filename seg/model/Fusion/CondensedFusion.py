@@ -95,19 +95,22 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 class Merger(nn.Module):
     def __init__(
+        self,
         num_seg_maps: int, # the number of [N, 1, 256, 256] maps to be merged
     ):
         super(Merger, self).__init__()
+        self.num_seg_maps = num_seg_maps
         convs_1st = nn.ModuleList()
         convs_2nd = nn.ModuleList()
         convs_3rd = nn.ModuleList()
 
         for i in range(num_seg_maps):
             convs_1st.append(conv3x3(1, 64))
-            convs_
+            convs_2nd.append(conv3x3(64, 128))
+            convs_3rd.append(conv3x3(128, 256))
+    def forward(self):
+        for i in range()
 
-        for i in range(num_seg_maps):
-            print(f'i: {i}')
 
 
 class NewFusionModule(nn.Module):

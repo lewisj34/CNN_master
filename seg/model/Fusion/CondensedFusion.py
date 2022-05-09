@@ -85,3 +85,79 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
                 tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
                 return mean
+
+
+def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
+    """3x3 convolution with padding"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=dilation, groups=groups, bias=False, dilation=dilation)
+
+
+class Merger(nn.Module):
+    def __init__(
+        num_seg_maps: int, # the number of [N, 1, 256, 256] maps to be merged
+    ):
+        super(Merger, self).__init__()
+        convs_1st = nn.ModuleList()
+        convs_2nd = nn.ModuleList()
+        convs_3rd = nn.ModuleList()
+
+        for i in range(num_seg_maps):
+            convs_1st.append(conv3x3(1, 64))
+            convs_
+
+        for i in range(num_seg_maps):
+            print(f'i: {i}')
+
+
+class NewFusionModule(nn.Module):
+    def __init__(
+        self,
+        in_channels_CNN,
+        in_channels_Trans,
+    ):
+        """
+        Assumes that the input dimensions of the transformer are going to be 
+        just 1/16, whereas the CNN we will have a varying number of skip 
+        connections.
+        
+        Uses attention and global average pooling. 
+        """
+        super(NewFusionModule, self).__init__()
+        self.c1_c = conv3x3(in_channels_CNN, 64)
+        self.c1_t = conv3x3(in_channels_Trans, 64) 
+
+        self.c2_c = conv3x3(64, 128)
+        self.c2_t = conv3x3(64, 128)
+        
+        self.c3_c = conv3x3(128, 256)
+        self.c3_t = conv3x3(128, 256)
+
+        self.gap = nn.AvgPool2d(kernel_size = )
+
+        x = torch.randn(1, 256, 100, 100)
+
+        x = torch.nn.AvgPool2d(kernel_size = 100, stride = 0, padding = 0, ceil_mode=False, count_include_pad=True)(x)
+
+        
+
+
+
+    
+    def forward(self, x_trans, x_cnn):
+        x = torch.cat([x_cnn, x_trans], dim=1)
+        return x
+        
+
+if __name__ == '__main__':
+    print(f'Hello world!')
+    x_trans = torch.rand((10, 64, 16, 16))
+    x_cnn = torch.rand((10, 512, 16, 16))
+    fusion_mod = NewFusionModule(
+        in_channels_CNN=x_cnn.shape[1],
+        in_channels_Trans=x_trans.shape[1],
+    ).cuda()
+
+    x = fusion_mod.forward(x_trans, x_cnn)
+    print(f'x.shape: {x.shape}')
+    

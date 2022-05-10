@@ -389,6 +389,12 @@ def main(
             trans_model_cfg,
         ).cuda()
         print(f'model imported succesfully.')
+    elif model_name == "NewFusionNetworkWithMergingNo1_2NoWeightsForSegMapsNoSqueeze":
+        from seg.model.Fusion.CondensedFusion import NewFusionNetworkWithMergingNo1_2NoWeightsForSegMapsNoSqueeze
+        model = NewFusionNetworkWithMergingNo1_2NoWeightsForSegMapsNoSqueeze(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

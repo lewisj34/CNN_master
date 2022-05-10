@@ -382,12 +382,11 @@ def main(
             trans_model_cfg,
             with_fusion=True,
         ).cuda()
-    elif model_name == 'CondensedFusionNetwork':
-        from seg.model.Fusion.CondensedFusion import CondensedFusionNetwork
-        model = CondensedFusionNetwork(
+    elif model_name == 'NewFusionNetworkWithMergingNo1_2NoWeightsForSegMaps':
+        from seg.model.Fusion.CondensedFusion import NewFusionNetworkWithMergingNo1_2NoWeightsForSegMaps
+        model = NewFusionNetworkWithMergingNo1_2NoWeightsForSegMaps(
             cnn_model_cfg,
             trans_model_cfg,
-            with_fusion=True,
         ).cuda()
         print(f'model imported succesfully.')
         exit(1)

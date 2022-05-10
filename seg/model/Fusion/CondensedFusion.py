@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 from seg.model.CNN.CNN import CNN_BRANCH
 from seg.model.transformer.create_modelV2 import create_transformerV2
-from seg.model.zed.parts import SCSEModule
+from seg.model.zed.parts import NouveauAttention, SCSEModule
 from .fuse import MiniEncoderFuse
 
 class CondensedFusionNetwork(nn.Module):
@@ -389,7 +389,10 @@ class NewFusion(nn.Module):
         self.c3_t = BNRconv3x3(dec_chans_t[1], dec_chans_t[2])
         self.c3_c = BNRconv3x3(dec_chans_c[1], dec_chans_c[2])
 
+        self.att1 = NouveauAttention(dec_chans_t[2] + dec_chans_c[2], reduction=16)
+
     def forward(self, x_t, x_c):
+        # feature extraction and concatenation at [16, 16] scale 
         x_out_t = self.c1_t(x_t)
         x_out_t = self.c2_t(x_out_t)
         x_out_t = self.c3_t(x_out_t)
@@ -398,28 +401,29 @@ class NewFusion(nn.Module):
         x_out_c = self.c2_c(x_out_c)
         x_out_c = self.c3_c(x_out_c)
 
-        x_out = torch.cat([x_out_t, x_out_c], dim=1)
+        x_out = torch.cat([x_out_t, x_out_c], dim=1) # output: x_out: torch.Size([2, 1024, 16, 16]) (as expected)
+
+        # now incorporate actual decoder and upsampling from other feature scales 
+        x_out = self.att1(x_out)
+
+        print(f'x_out: {x_out.shape}')
+
+
+        return x_out 
         
 
         
 
 
 if __name__ == '__main__':
+    x_t = torch.randn((2, 64, 16, 16), device='cuda')
+    x_c = torch.randn((2, 512, 16, 16), device='cuda')
 
-    num_seg_maps = 5
-    seg_maps = list()
-    for i in range(num_seg_maps):
-        x = torch.randn((2, 1, 256, 256), device='cuda')
-        seg_maps.append(x)
-        print(seg_maps[i].shape)
-    
-    model = MergerNoSqueezeAndExitation(
-        num_seg_maps = len(seg_maps),
-        use_weights=False,
+    fuse = NewFusion(
+        in_chans_t=x_t.shape[1],
+        in_chans_c=x_c.shape[1],
+        dec_chans_t=(256, 256, 512),
+        dec_chans_c=(256, 256, 512),
     ).cuda()
 
-    
-    for i in range(20):
-        out = model(seg_maps)
-    # output = torch.mean(torch.stack(seg_maps), dim=0)
-    # print(f'output.shape: {output.shape}')
+    out = fuse(x_t, x_c)

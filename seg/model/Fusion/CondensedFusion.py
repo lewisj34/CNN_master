@@ -95,6 +95,26 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=dilation, groups=groups, bias=False, dilation=dilation)
 
+class BNRconv3x3(nn.Module):
+    def __init__(
+        self,
+        in_planes, 
+        out_planes, 
+        stride=1, 
+        groups=1, 
+        dilation=1,
+    ):
+        super(BNRconv3x3, self).__init__()
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=dilation, groups=groups, bias=False, dilation=dilation)
+        self.bn = nn.BatchNorm2d(out_planes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x 
 
 class Merger(nn.Module):
     def __init__(
@@ -346,6 +366,43 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         tensor_list = [x_final_cnn, x_final_trans, self.x_1_4, self.x_1_8, self.x_1_16]
         output = self.merger(tensor_list)
         return output
+
+
+class NewFusion(nn.Module):
+    def __init__(
+        self,
+        in_chans_t,
+        in_chans_c,
+        dec_chans_t=(256, 256, 512),
+        dec_chans_c=(256, 256, 512),
+    ):
+        super(NewFusion, self).__init__()
+        print(f'Hyperfocus decoder channel progression, Trans: {dec_chans_t}')
+        print(f'Hyperfocus decoder channel progression, CNN: {dec_chans_c}')
+
+        self.c1_t = BNRconv3x3(in_chans_t, dec_chans_t[0])
+        self.c1_c = BNRconv3x3(in_chans_c, dec_chans_c[0])
+
+        self.c2_t = BNRconv3x3(dec_chans_t[0], dec_chans_t[1])
+        self.c2_c = BNRconv3x3(dec_chans_c[0], dec_chans_c[1])
+
+        self.c3_t = BNRconv3x3(dec_chans_t[1], dec_chans_t[2])
+        self.c3_c = BNRconv3x3(dec_chans_c[1], dec_chans_c[2])
+
+    def forward(self, x_t, x_c):
+        x_out_t = self.c1_t(x_t)
+        x_out_t = self.c2_t(x_out_t)
+        x_out_t = self.c3_t(x_out_t)
+
+        x_out_c = self.c1_c(x_c)
+        x_out_c = self.c2_c(x_out_c)
+        x_out_c = self.c3_c(x_out_c)
+
+        x_out = torch.cat([x_out_t, x_out_c], dim=1)
+        
+
+        
+
 
 if __name__ == '__main__':
 

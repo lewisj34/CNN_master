@@ -189,11 +189,9 @@ class MergerNoSqueezeAndExitation(nn.Module):
         
         # GLOBAL AVG POOLING 
         output = torch.mean(torch.stack(tens_list), dim=0)
-        print(f'output.shape: {output.shape}')
 
         # average along final dim
         output = torch.mean(output, dim=1, keepdim=True)
-        print(f'output.shape: {output.shape}')
 
         return output   
 

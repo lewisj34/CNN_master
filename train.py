@@ -389,7 +389,6 @@ def main(
             trans_model_cfg,
         ).cuda()
         print(f'model imported succesfully.')
-        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

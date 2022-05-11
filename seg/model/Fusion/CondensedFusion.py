@@ -116,6 +116,27 @@ class BNRconv3x3(nn.Module):
         x = self.relu(x)
         return x 
 
+class BNRdilatedconv3x3(nn.Module):
+    def __init__(
+        self,
+        in_planes, 
+        out_planes, 
+        stride=1, 
+        groups=1, 
+        dilation=1,
+    ):
+        super(BNRdilatedconv3x3, self).__init__()
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=dilation, groups=groups, bias=False, dilation=dilation)
+        self.bn = nn.BatchNorm2d(out_planes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x 
+
 class Merger(nn.Module):
     def __init__(
         self,
@@ -291,6 +312,119 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         output = self.merger(tensor_list)
         return output
 
+class dTripleConv(nn.Module):
+    def __init__(
+        self,
+        in_planes, 
+        out_planes, 
+        stride=1, 
+        groups=1, 
+    ):
+        """
+        Dilated Triple Convolution with BatchNorm and ReLU. 
+        1st conv3x3 is dilation=1
+        2nd conv3x3 is dilation=2
+        3rd conv3x3 is dilation=3
+        Visual found here: 
+        https://www.researchgate.net/figure/3-3-convolution-kernels-with-different-dilation-rate-as-1-2-and-3_fig9_323444534
+        """
+        super(dTripleConv, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                    padding=1, groups=groups, bias=False, dilation=1)
+        self.bn1 = nn.BatchNorm2d(out_planes)
+        self.relu1 = nn.ReLU()
+
+        self.conv2 = nn.Conv2d(out_planes, out_planes, kernel_size=3, stride=stride,
+                    padding=2, groups=groups, bias=False, dilation=2)
+        self.bn2 = nn.BatchNorm2d(out_planes)
+        self.relu2 = nn.ReLU()
+
+        self.conv3 = nn.Conv2d(out_planes, out_planes, kernel_size=3, stride=stride,
+                    padding=3, groups=groups, bias=False, dilation=3)
+        self.bn3 = nn.BatchNorm2d(out_planes)
+        self.relu3 = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu3(x)
+        return x 
+
+class TripleConv(nn.Module):
+    def __init__(
+        self,
+        in_planes, 
+        out_planes, 
+        mid_planes,
+        stride=1, 
+        groups=1, 
+        dilation=1
+    ):
+        """
+        TripleConv - no dilations though (unless specified for all of them in 
+        args)
+        Visual found here: 
+        https://www.researchgate.net/figure/3-3-convolution-kernels-with-different-dilation-rate-as-1-2-and-3_fig9_323444534
+        """
+        super(dTripleConv, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_planes, mid_planes, kernel_size=3, stride=stride,
+                    padding=dilation, groups=groups, bias=False, dilation=dilation)
+        self.bn1 = nn.BatchNorm2d(out_planes)
+        self.relu1 = nn.ReLU()
+
+        self.conv2 = nn.Conv2d(mid_planes, mid_planes, kernel_size=3, stride=stride,
+                    padding=dilation, groups=groups, bias=False, dilation=dilation)
+        self.bn2 = nn.BatchNorm2d(out_planes)
+        self.relu2 = nn.ReLU()
+
+        self.conv3 = nn.Conv2d(mid_planes, out_planes, kernel_size=3, stride=stride,
+                    padding=dilation, groups=groups, bias=False, dilation=dilation)
+        self.bn3 = nn.BatchNorm2d(out_planes)
+        self.relu3 = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu3(x)
+        return x 
+
+class tUp(nn.Module):
+    """
+    Upsampling - followed by triple conv. 
+    """
+    def __init__(self, in_channels, out_channels, bilinear=True):
+        super().__init__()
+
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.conv = TripleConv(in_channels, out_channels, in_channels // 2)
+
+    def forward(self, x1, x2=None):
+        x1 = self.up(x1)
+        # input is CHW
+        if x2 is not None:
+            diffY = x2.size()[2] - x1.size()[2]
+            diffX = x2.size()[3] - x1.size()[3]
+
+            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                            diffY // 2, diffY - diffY // 2])
+            x = torch.cat([x2, x1], dim=1)
+        else:
+            x = x1
+        return self.conv(x)
 
 class NewFusionNetworkWithMergingNo1_2NoWeightsForSegMapsNoSqueeze(nn.Module):
     def __init__(
@@ -367,7 +501,6 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         output = self.merger(tensor_list)
         return output
 
-
 class NewFusion(nn.Module):
     def __init__(
         self,
@@ -405,6 +538,7 @@ class NewFusion(nn.Module):
 
         # now incorporate actual decoder and upsampling from other feature scales 
         x_out = self.att1(x_out)
+
 
         print(f'x_out: {x_out.shape}')
 

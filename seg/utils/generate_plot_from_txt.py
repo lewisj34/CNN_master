@@ -91,7 +91,7 @@ def getAllDatasetStatisticsFromDir(dir):
         print(f'\tmax dice loss: {np.max(dice_data)}')
         print(f'\tmean dice loss between 80 and 100 epochs: {np.mean(dice_data[750:])}')
 
-def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=80, end_epoch=None):
+def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epoch=None):
     tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
     ious_avg = np.zeros((len(tests), len(list_dirs)))
     ious_max = np.zeros((len(tests), len(list_dirs)))
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
     #     'results/Transformer/Transformer_2/test_dice_file.txt')
 
-    getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_12'])
+    getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_14'], start_epoch = 700, end_epoch = 750)
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
     # dirs = [

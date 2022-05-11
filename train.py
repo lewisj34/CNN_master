@@ -395,6 +395,18 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
+    elif model_name == "CondensedFusionNetwork":
+        from seg.model.Fusion.CondensedFusion import CondensedFusionNetwork
+        model = CondensedFusionNetwork(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+    elif model_name == 'ASPPFusionNetwork':
+        from seg.model.Fusion.ASPP_fuse import ASPPFusionNetwork
+        model = ASPPFusionNetwork(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

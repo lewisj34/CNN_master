@@ -227,7 +227,10 @@ def main(
     cnn_model_cfg['num_output_trans'] = num_output_trans
     trans_model_cfg['num_output_trans'] = num_output_trans
 
-    if model_name == "OldFusionNetwork":
+    if model_name == 'basic':
+        from seg.model.basic import BASIC
+        model = BASIC().cuda()
+    elif model_name == "OldFusionNetwork":
         model = OldFusionNetwork(
             cnn_model_cfg, 
             trans_model_cfg,

@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.autograd import Variable
 from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
+from seg.model.losses.custom import MultiScaleIoU
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.focal_tversky import FocalTverskyLoss
 from seg.model.losses.tversky import TverskyLoss
@@ -166,6 +167,13 @@ def train_one_epochV2(
                 gts = gts, 
                 epoch = curr_epoch,
             )
+        elif isinstance(loss_fn, MultiScaleIoU):
+            print(f'Not set up yet.')
+            seg_maps = model.get_seg_maps() # returns a list of segmentation maps
+            losses = list()
+            for i in range(len(seg_maps)):
+                losses.append(loss_fn(seg_maps[i], gts)) # get loss for each one 
+            exit(1)
         else:
             loss_val = loss_fn(output, gts, smooth=eps) # note smooth not used for Weighted, also weight calls sigmoid 
 

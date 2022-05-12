@@ -9,6 +9,7 @@ from pathlib import Path
 from seg.model.PraNet.lib.PraNet_Res2Net import PraNet
 from seg.model.SwinUNet.vision_transformer import SwinUnet
 from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
+from seg.model.losses.custom import MultiScaleIoU
 from seg.model.transformer.create_model import create_transformer
 from seg.model.transformer.create_modelV2 import create_transformerV2
 from seg.utils.data.generate_npy import split_and_convert_to_npyV2
@@ -416,6 +417,12 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
+    elif model_name == 'NewFusionNetworkWeight':
+        from seg.model.Fusion.NewFusionNetworkWithWeights import NewFusionNetworkWeight
+        model = NewFusionNetworkWeight(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    
@@ -626,6 +633,8 @@ def main(
         loss_fn = TverskyLoss(nonlin='sigmoid')
     elif loss_type == "multiscaleIoUBCE":
         loss_fn = MultiScaleIoUBCELoss(num_losses=4, epoch_unfreeze=3)
+    elif loss_type == 'custom':
+        loss_fn = MultiScaleIoU(num_seg_maps=7)
     else:
         raise NotImplementedError(f'Just put more elif structures in here.')
 

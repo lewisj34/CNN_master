@@ -168,12 +168,16 @@ def train_one_epochV2(
                 epoch = curr_epoch,
             )
         elif isinstance(loss_fn, MultiScaleIoU):
-            print(f'Not set up yet.')
-            seg_maps = model.get_seg_maps() # returns a list of segmentation maps
-            losses = list()
-            for i in range(len(seg_maps)):
-                losses.append(loss_fn(seg_maps[i], gts)) # get loss for each one 
-            exit(1)
+            loss_val = loss_fn(
+                targets=gts, 
+                input_full=output, # the global pooled output across all segmentation maps
+                input_full_cnn=model.x_final_cnn,
+                input_full_trans=model.x_final_trans,
+                input_1_2=model.x_1_2, 
+                input_1_4=model.x_1_4, 
+                input_1_8=model.x_1_8, 
+                input_1_16=model.x_1_16, 
+            )
         else:
             loss_val = loss_fn(output, gts, smooth=eps) # note smooth not used for Weighted, also weight calls sigmoid 
 

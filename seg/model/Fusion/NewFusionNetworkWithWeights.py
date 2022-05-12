@@ -10,7 +10,7 @@ from seg.model.transformer.create_modelV2 import create_transformerV2
 from seg.model.Fusion.fuse import SimpleFusion
 from .fuse import MiniEncoderFuse
 
-class NewFusionNetwork(nn.Module):
+class NewFusionNetworkWeight(nn.Module):
     def __init__(
         self, 
         cnn_model_cfg,
@@ -19,7 +19,7 @@ class NewFusionNetwork(nn.Module):
         with_fusion=True,
         with_aspp=False,
         ):
-        super(NewFusionNetwork, self).__init__()
+        super(NewFusionNetworkWeight, self).__init__()
 
         self.patch_size = cnn_model_cfg['patch_size']
         assert cnn_model_cfg['patch_size'] == trans_model_cfg['patch_size'], \

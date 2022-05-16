@@ -32,7 +32,7 @@ from seg.utils.dataset import get_TestDatasetV2, get_dataset, getTestDatasetForV
 from seg.utils.sched import WarmupPoly
 from engineV2 import train_one_epochV2
 
-ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS', 'CVC_ColonDB', 'master']
+ALLOWABLE_DATASETS = ['kvasir', 'CVC_ClinicDB', 'ETIS', 'CVC_ColonDB', 'master', 'master_merged']
 ALLOWABLE_MODELS = ["OldFusionNetwork", "SimplestFusionNetwork", "UNet_plain", \
     "UNet_backboned", "just_trans", "swinunet"]
 ALLOWABLE_CNN_MODELS = ['unet']
@@ -317,7 +317,6 @@ def main(
             cnn_pretrained=False,
             with_fusion=True,
         ).cuda()
-        exit(1)
     elif model_name == 'EffNet_B7':
         from z import EffNet_B7
         model = EffNet_B7(

@@ -298,6 +298,68 @@ class MasterDataset(data.Dataset):
     def __len__(self):
         return self.size
 
+class MasterDatasetMerged(data.Dataset):
+    """
+    Dataset for kvasir polyp data
+    """
+    def __init__(
+        self, 
+        image_root, 
+        gt_root, 
+        normalization="vit"
+    ):
+        self.images = np.load(image_root)
+        self.gts = np.load(gt_root)
+
+        assert len(self.images) == len(self.gts) 
+        self.size = len(self.images)
+
+        print(f'Using normalization: {normalization}')
+
+        if normalization == "vit":
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.5, 0.5, 0.5],
+                                    [0.5, 0.5, 0.5])
+                ]) 
+        elif normalization == "deit":
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406],
+                                    [0.229, 0.224, 0.225])
+                ])
+        else:
+            print("Error: Normalization used: ", normalization)
+            raise ValueError("Normalization can only be vit or deit")
+
+
+
+        self.gt_transform = transforms.Compose([
+            transforms.ToTensor()])
+        
+        self.transform = A.Compose(
+            [
+                A.ShiftScaleRotate(shift_limit=0.15, scale_limit=0.15, \
+                    rotate_limit=25, p=0.5, border_mode=0),
+                A.HorizontalFlip(),
+                A.VerticalFlip()
+            ]
+        )
+
+    def __getitem__(self, index):
+        image = self.images[index]
+        gt = self.gts[index]
+        gt = gt/255.0
+
+        transformed = self.transform(image=image, mask=gt)
+        image = self.img_transform(transformed['image'])
+        gt = self.gt_transform(transformed['mask'])
+        return image, gt
+
+    def __len__(self):
+        return self.size
+
+
 def get_dataset(
     dataset,
     image_root, 
@@ -341,6 +403,14 @@ def get_dataset(
                                     pin_memory=pin_memory) 
     elif dataset == "master":
         dataset = MasterDataset(image_root, gt_root,
+            normalization=normalization)
+        data_loader = data.DataLoader(dataset=dataset,
+                                    batch_size=batchsize,
+                                    shuffle=shuffle,
+                                    num_workers=num_workers,
+                                    pin_memory=pin_memory) 
+    elif dataset == 'master_merged':
+        dataset = MasterDatasetMerged(image_root, gt_root,
             normalization=normalization)
         data_loader = data.DataLoader(dataset=dataset,
                                     batch_size=batchsize,

@@ -708,6 +708,10 @@ def split_and_convert_to_npyV2(
         if parent_dir is None:
             parent_dir = '/home/john/Documents/Datasets/master_polyp'
         assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+    elif dataset == 'master_merged': 
+        if parent_dir is None:
+            parent_dir = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_final/'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
     else:
         raise NotImplementedError(f'Dataset: {dataset} not implemented.')    
         

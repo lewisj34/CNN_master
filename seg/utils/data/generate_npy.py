@@ -215,9 +215,9 @@ def generate_split_txt_files(
     valid_split_path = split_dir + 'valid.txt'
     test_split_path = split_dir + 'test.txt'
 
-    assert(os.path.isdir(parent_dir) 
-        and os.path.isdir(img_dir) 
-        and os.path.isdir(ann_dir))
+    assert os.path.isdir(parent_dir), f'parent_dir: {parent_dir} DNE.'
+    assert os.path.isdir(img_dir), f'img_dir: {img_dir} DNE.'
+    assert os.path.isdir(ann_dir), f'ann_dir: {ann_dir} DNE.'
 
     # check if {train, ..., test}.txt files exist, if they don't, create them. 
     if not os.path.isfile(train_split_path) or not os.path.isfile(\

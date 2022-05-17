@@ -33,8 +33,8 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epo
                 print(f'\t\tmean iou loss between {start_epoch} and end epochs: {np.mean(iou_data[start_epoch:])}')
                 print(f'\t\tmean dice loss between {start_epoch} and end epochs: {np.mean(dice_data[start_epoch:])}')
             else: 
-                print(f'\t\tmean iou loss between {start_epoch} and {end_epoch} epochs: {np.mean(iou_data[start_epoch:end_epoch])}')
-                print(f'\t\tmean dice loss between {start_epoch} and {end_epoch} epochs: {np.mean(dice_data[start_epoch:end_epoch])}')
+                print(f'\t\tmean (dice, iou) [{start_epoch} and {end_epoch}]: {np.mean(dice_data[start_epoch:end_epoch])} {np.mean(iou_data[start_epoch:end_epoch])}')
+                # print(f'\t\tmean dice loss between {start_epoch} and {end_epoch} epochs: {np.mean(dice_data[start_epoch:end_epoch])}')
             if end_epoch == None:
                 ious_max[i, j] = np.max(iou_data)
                 ious_avg[i, j] = np.mean(iou_data[start_epoch:])
@@ -62,8 +62,8 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epo
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', nargs='+', type=str)
-    parser.add_argument('--start_epoch', type=int)
-    parser.add_argument('--end_epoch', type=int)
+    parser.add_argument('--start_epoch', type=int, default=750)
+    parser.add_argument('--end_epoch', type=int, default=800)
     args = parser.parse_args()
     results_list = list(args.data)
 

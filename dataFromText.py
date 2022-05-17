@@ -48,8 +48,10 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epo
 
     for i in range(len(list_dirs)):
         list_dirs[i] = os.path.basename(list_dirs[i])
-    pd.DataFrame(ious_max).to_csv('ious_max.csv', header=list_dirs)
-    pd.DataFrame(dice_max).to_csv('dice_max.csv', header=list_dirs)
+    if not os.path.isdir('garbage'):
+        os.mkdir('garbage')
+    pd.DataFrame(ious_max).to_csv('garbage/ious_max.csv', header=list_dirs)
+    pd.DataFrame(dice_max).to_csv('garbage/dice_max.csv', header=list_dirs)
     # pd.DataFrame(ious_max).to_csv('ious.csv', header=list_dirs)
     # pd.DataFrame(ious_max).to_csv('ious.csv', header=list_dirs)
     print(ious_max)

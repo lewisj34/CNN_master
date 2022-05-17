@@ -442,6 +442,20 @@ def main(
         model = FusionNetworkRFB(
             cnn_model_cfg,
             trans_model_cfg,
+            out_chans = [64, 32, 16, 8],
+            dilation1=1,
+            dilation2=2,
+            dilation3=3,
+        ).cuda()
+        # Total Trainable Params: 96.715725M
+        # count_parameters(model)
+        # exit(1)
+    elif model_name == 'unet_invert':
+        from seg.model.invert_unet import iUnet
+        model = iUnet(
+            n_channels=3,
+            n_classes=1, 
+            patch_size=16,
         ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')

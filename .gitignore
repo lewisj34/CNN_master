@@ -39,4 +39,5 @@ ious_max.csv
 dice_max.csv
 
 # .pyc files
+
 *.pyc

@@ -12,6 +12,7 @@ from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
 from seg.model.losses.custom import MultiScaleIoU
 from seg.model.transformer.create_model import create_transformer
 from seg.model.transformer.create_modelV2 import create_transformerV2
+from seg.utils.check_parameters import count_parameters
 from seg.utils.data.generate_npy import split_and_convert_to_npyV2
 from seg.utils.err_codes import crop_err1, crop_err2, crop_err3,resize_err1, resize_err2, resize_err3
 from seg.model.CNN.CNN_backboned import CNN_BRANCH_WITH_BACKBONE
@@ -429,6 +430,12 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
             with_fusion=True,
+        ).cuda()
+    elif model_name == 'FusionNetworkRFB':
+        from seg.model.Fusion.RFB_Fusion.RFB_FusionNetwork import FusionNetworkRFB
+        model = FusionNetworkRFB(
+            cnn_model_cfg,
+            trans_model_cfg,
         ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')

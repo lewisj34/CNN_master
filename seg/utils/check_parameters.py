@@ -34,6 +34,7 @@ def count_parameters(model):
     
 if __name__ == '__main__':
     from z import EffNet_B3, EffNet_B4, EffNet_B7
+    from seg.model.Fusion.FusionNetwork import NewFusionNetwork
     from seg.model.CNN.CNN import CNN_BRANCH
     count_parameters(EffNet_B3())
     count_parameters(EffNet_B4())

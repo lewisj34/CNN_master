@@ -4,10 +4,11 @@ import torch.nn.functional as F
 import yaml
 from pathlib import Path
 
-from seg.model.CNN.CNN import CNN_BRANCH
+from seg.model.CNN.CNN import CNN_BRANCH, modUNet
 from seg.model.CNN.CNN_parts import Up
 
 from seg.model.transformer.create_modelV2 import create_transformerV2
+from seg.utils.check_parameters import count_parameters
 from ..fuse import MiniEncoderFuse
 from .parts import RFB_modified, BNRconv3x3
 
@@ -168,14 +169,19 @@ class FusionNetworkRFB(nn.Module):
         self, 
         cnn_model_cfg,
         trans_model_cfg,
+        out_chans = [64, 32, 16, 8],
+        dilation1=1,
+        dilation2=2,
+        dilation3=3,
     ):
         super(FusionNetworkRFB, self).__init__()
 
-        self.cnn_branch = CNN_BRANCH(
+        self.cnn_branch = modUNet(
             n_channels=cnn_model_cfg['in_channels'],
             n_classes=cnn_model_cfg['num_classes'],
             patch_size=cnn_model_cfg['patch_size'],
             bilinear=True,
+            channels=[64 // 2, 128 // 2, 256 // 2, 512 // 2, 1024 // 2, 512 // 2, 256 // 2, 128 // 2, 64 // 2],
         )
         # now populate dimensions 
         self.cnn_branch.get_dimensions(
@@ -191,40 +197,39 @@ class FusionNetworkRFB(nn.Module):
         # num_output_trans = 64
 
         # fusion pipeline
-        out_chans = [256, 128, 64]
-        dilations = [1, 3, 6]
+        # out_chans = [256, 128, 64]
 
         self.fuse_1_16 = RFBFusionModule1_16(
             in_chan_t=num_output_trans, 
             in_chan_c=self.cnn_branch.x_1_16.shape[1],
-            out_chan=out_chans[0],
-            dilation=1,
+            out_chan=out_chans[0], # 128
+            dilation=dilation1, # 1
         )
         self.fuse_1_8 = RFBFusionModule1_8(
             in_chan_t=num_output_trans, 
             in_chan_c=self.cnn_branch.x_1_8.shape[1],
-            in_chan_x_16=out_chans[0],
-            out_chan=out_chans[1],
-            dilation1=1,
-            dilation2=3,
+            in_chan_x_16=out_chans[0], # 128
+            out_chan=out_chans[1], # 64
+            dilation1=dilation1, # 1 
+            dilation2=dilation2, # 2
         )
         self.fuse_1_4 = RFBFusionModule1_4(
             in_chan_t=num_output_trans, 
             in_chan_c=self.cnn_branch.x_1_4.shape[1],
-            in_chan_x_8=out_chans[1],
-            out_chan=out_chans[2],
-            dilation1=1,
-            dilation2=3,
-            dilation3=6,
+            in_chan_x_8=out_chans[1], # 64
+            out_chan=out_chans[2], # 32
+            dilation1=dilation1,
+            dilation2=dilation2,
+            dilation3=dilation3,
         )
         self.up_fuse1 = Up(
             in_channels=out_chans[2],
-            out_channels=32, 
+            out_channels=out_chans[1], 
             bilinear=True,
         )
 
         self.up_fuse2 = Up(
-            in_channels=32,
+            in_channels=out_chans[1],
             out_channels=1,
             bilinear=True,
         )
@@ -248,3 +253,39 @@ class FusionNetworkRFB(nn.Module):
         mean = torch.mean(torch.stack(tensor_list), dim=0) 
         return mean
 
+if __name__ == '__main__':
+    out_chans = [128, 64, 32]
+
+    model = RFBFusionModule1_16(
+        in_chan_t=64, 
+        in_chan_c=512,
+        out_chan=out_chans[0],
+        dilation=1,
+    )
+
+    p1 = count_parameters(model)
+
+    model = RFBFusionModule1_8(
+        in_chan_t=64, 
+        in_chan_c=512,
+        out_chan=out_chans[1],
+        in_chan_x_16=out_chans[0],
+        dilation1=1,
+        dilation2=3,
+    )
+    
+    p2 = count_parameters(model)
+
+    model = RFBFusionModule1_4(
+        in_chan_t=64, 
+        in_chan_c=256,
+        in_chan_x_8=out_chans[1],
+        out_chan=out_chans[2],
+        dilation1=1,
+        dilation2=3,
+        dilation3=6,
+    )
+
+    p3 = count_parameters(model)
+
+    print(f'Total params: {(p1 + p2 + p3) / 10**6}M')

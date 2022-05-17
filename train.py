@@ -45,6 +45,11 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 # try typing this in upon restarting 
 #  python train.py --num_epochs 20 --resume '/home/john/Documents/Dev_Linux/segmentation/trans_isolated/seg/current_checkpoints/Transformer/Transformer-8.pth'
 
+def force_cudnn_initialization():
+    s = 32
+    dev = torch.device('cuda')
+    torch.nn.functional.conv2d(torch.zeros(s, s, s, s, device=dev), torch.zeros(s, s, s, s, device=dev))
+
 @click.command(help='')
 @click.option('--dataset', type=str, default='master')
 @click.option('--model_name', type=str, default='OldFusionNetwork') 
@@ -74,7 +79,6 @@ BEST_LOSS_OPTIONS = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir',
 @click.option('--best_loss_option', type=str, default='ALL')
 @click.option('--dataset_file_location', type=str, default=None, help='where is the dataset corresponding to `dataset` saved')
 @click.option('--num_output_trans', type=int, default=64, help='where is the dataset corresponding to `dataset` saved')
-
 def main(
     dataset,
     model_name,
@@ -433,6 +437,8 @@ def main(
         ).cuda()
     elif model_name == 'FusionNetworkRFB':
         from seg.model.Fusion.RFB_Fusion.RFB_FusionNetwork import FusionNetworkRFB
+        print(f'WARNING: RUNNING force_cudnn_initialization()')
+        force_cudnn_initialization()
         model = FusionNetworkRFB(
             cnn_model_cfg,
             trans_model_cfg,

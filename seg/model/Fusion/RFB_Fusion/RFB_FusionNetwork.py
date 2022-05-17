@@ -11,6 +11,24 @@ from seg.model.transformer.create_modelV2 import create_transformerV2
 from ..fuse import MiniEncoderFuse
 from .parts import RFB_modified, BNRconv3x3
 
+from timm.models.layers import trunc_normal_
+
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        trunc_normal_(m.weight, std=0.02)
+        if isinstance(m, nn.Linear) and m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Conv2d):
+        trunc_normal_(m.weight, std=0.02)
+        if isinstance(m, nn.Conv2d) and m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.LayerNorm):
+        nn.init.constant_(m.bias, 0)
+        nn.init.constant_(m.weight, 1.0)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.bias, 0)
+        nn.init.constant_(m.weight, 1.0)
+
 class RFBFusionModule1_16(nn.Module):
     def __init__(
         self,
@@ -34,6 +52,9 @@ class RFBFusionModule1_16(nn.Module):
         self.rfb_c = RFB_modified(in_chan_c, inter_chan)
 
         self.conv = BNRconv3x3(inter_chan * 2, out_chan, dilation=dilation)
+
+        print(f'Initializing weights...')
+        self.apply(init_weights)
 
     
     def forward(self, x_c, x_t, x_extra=None):
@@ -76,7 +97,9 @@ class RFBFusionModule1_8(nn.Module):
 
         self.conv1 = BNRconv3x3(inter_chan * 2 + in_chan_x_16, out_chan, dilation=dilation1)
         self.conv2 = BNRconv3x3(out_chan, out_chan, dilation=dilation2)
-
+        
+        print(f'Initializing weights...')
+        self.apply(init_weights)
     
     def forward(self, x_c, x_t, x_extra=None):
         x_t = self.rfb_t(x_t)
@@ -122,6 +145,8 @@ class RFBFusionModule1_4(nn.Module):
         self.conv2 = BNRconv3x3(out_chan, out_chan, dilation=dilation2)
         self.conv3 = BNRconv3x3(out_chan, out_chan, dilation=dilation3)
 
+        print(f'Initializing weights...')
+        self.apply(init_weights)
     
     def forward(self, x_c, x_t, x_extra=None):
         x_t = self.rfb_t(x_t)
@@ -159,14 +184,6 @@ class FusionNetworkRFB(nn.Module):
             H_in = cnn_model_cfg['image_size'][0], 
             W_in = cnn_model_cfg['image_size'][1]
         )
-
-        print(f'Warning in file: {__file__}, we are manually assigning the \
-decoder to have a `linear` value in create_transformer when creating the \
-fusion network and thus not using the decoder value input to main() in \
-train.py, but im too tired to try and figure out how to work that and were \
-running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
-        # need to do something or pull information from the trans_model_cfg and
-        #  pull that info. but yeah. wahtever rn lol 
         self.trans_branch = create_transformerV2(trans_model_cfg, 
             decoder='linear')
         num_output_trans = trans_model_cfg['num_output_trans']
@@ -212,6 +229,8 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
             bilinear=True,
         )
         
+        print(f'Initializing weights...')
+        self.apply(init_weights)
 
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)

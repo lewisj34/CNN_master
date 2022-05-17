@@ -691,27 +691,27 @@ def split_and_convert_to_npyV2(
     if dataset == 'kvasir':
         if parent_dir is None:
             parent_dir = '/home/john/Documents/Datasets/kvasir_merged'
-        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above, or input --dataset_file_location in commandline arg'
     elif dataset == 'CVC_ClinicDB':
         if parent_dir is None:    
             parent_dir = '/home/john/Documents/Datasets/CVC-ClinicDB/PNG'
-        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above, or input --dataset_file_location in commandline arg'
     elif dataset == 'ETIS':
         if parent_dir is None:
             parent_dir = '/home/john/Documents/Datasets/ETIS'
-        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above, or input --dataset_file_location in commandline arg'
     elif dataset == 'CVC_ColonDB':
         if parent_dir is None:
             parent_dir = '/home/john/Documents/Datasets/CVC-ColonDB'
-        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above, or input --dataset_file_location in commandline arg'
     elif dataset == 'master':
         if parent_dir is None:
             parent_dir = '/home/john/Documents/Datasets/master_polyp'
-        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above, or input --dataset_file_location in commandline arg'
     elif dataset == 'master_merged': 
         if parent_dir is None:
             parent_dir = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_final/'
-        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above'
+        assert os.path.isdir(parent_dir), f'directory: {parent_dir} doesnt exist adjust above, or input --dataset_file_location in commandline arg'
     else:
         raise NotImplementedError(f'Dataset: {dataset} not implemented.')    
         

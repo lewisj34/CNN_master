@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd 
 
 def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epoch=None):
-    tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+    # tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+    tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
     ious_avg = np.zeros((len(tests), len(list_dirs)))
     ious_max = np.zeros((len(tests), len(list_dirs)))
     dice_max = np.zeros((len(tests), len(list_dirs)))
@@ -19,21 +20,21 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epo
         valid_dice_path = dir + '/test_dice_file.txt'
         valid_loss_path = dir + '/test_loss_file.txt'
 
-        
+        print(f'result_dir: {dir}')
         for i in range(len(tests)): # ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
-            print(tests[i])
+            print(f'\t{tests[i]}')
             iou_path = dir + '/test_' + tests[i] + '_iou_file.txt'
             dice_path = dir + '/test_' + tests[i] + '_dice_file.txt'
             iou_data = np.loadtxt(iou_path)
             dice_data = np.loadtxt(dice_path)
-            print(f'\tmax iou loss: {np.max(iou_data)}')
-            print(f'\tmax dice loss: {np.max(dice_data)}')
+            print(f'\t\tmax iou loss: {np.max(iou_data)}')
+            print(f'\t\tmax dice loss: {np.max(dice_data)}')
             if end_epoch==None:
-                print(f'\tmean iou loss between {start_epoch} and end epochs: {np.mean(iou_data[start_epoch:])}')
-                print(f'\tmean dice loss between {start_epoch} and end epochs: {np.mean(dice_data[start_epoch:])}')
+                print(f'\t\tmean iou loss between {start_epoch} and end epochs: {np.mean(iou_data[start_epoch:])}')
+                print(f'\t\tmean dice loss between {start_epoch} and end epochs: {np.mean(dice_data[start_epoch:])}')
             else: 
-                print(f'\tmean iou loss between {start_epoch} and {end_epoch} epochs: {np.mean(iou_data[start_epoch:end_epoch])}')
-                print(f'\tmean dice loss between {start_epoch} and {end_epoch} epochs: {np.mean(dice_data[start_epoch:end_epoch])}')
+                print(f'\t\tmean iou loss between {start_epoch} and {end_epoch} epochs: {np.mean(iou_data[start_epoch:end_epoch])}')
+                print(f'\t\tmean dice loss between {start_epoch} and {end_epoch} epochs: {np.mean(dice_data[start_epoch:end_epoch])}')
             if end_epoch == None:
                 ious_max[i, j] = np.max(iou_data)
                 ious_avg[i, j] = np.mean(iou_data[start_epoch:])

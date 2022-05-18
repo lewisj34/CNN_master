@@ -436,6 +436,7 @@ def main(
             with_fusion=True,
         ).cuda()
     elif model_name == 'FusionNetworkRFB':
+        # this is GARBAGE 
         from seg.model.Fusion.RFB_Fusion.RFB_FusionNetwork import FusionNetworkRFB
         print(f'WARNING: RUNNING force_cudnn_initialization()')
         force_cudnn_initialization()

@@ -109,30 +109,70 @@ class DecoderMultiClass(nn.Module):
         x = self.final_conv(x)
         return x 
 
+class DecoderMultiClassMod(nn.Module):
+    def __init__(
+        self,
+        in_chans=1,
+        inter_chans=[512, 64, 32, 16],
+        out_chans=1,
+        num_chans_CNN=[128, 64, 32],
+    ):
+        super(DecoderMultiClassMod, self).__init__()
+
+        self.up1 = UpMod(
+            in_channels = in_chans, 
+            out_channels = inter_chans[0],
+            bilinear=True,
+            scale_factor=2,
+        )
+        self.up2 = UpMod(
+            in_channels = inter_chans[0] + num_chans_CNN[0], 
+            out_channels = inter_chans[1],
+            scale_factor = 2,
+        )
+        self.up3 = UpMod(
+            in_channels = inter_chans[1] + num_chans_CNN[1], 
+            out_channels = inter_chans[2],
+            bilinear=True,
+            scale_factor=2,
+        )
+        self.up4 = UpMod(
+            in_channels = inter_chans[2] + num_chans_CNN[2],
+            out_channels = inter_chans[3],
+            scale_factor = 2,
+        )
+        self.final_conv = nn.Conv2d(inter_chans[3], 1, kernel_size=1) 
+    def forward(self, x, x_c0=None, x_c1=None, x_c2=None, x_c3=None):
+        # x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
+        x = self.up1(x)
+        x = self.up2(x, x_c0)
+        x = self.up3(x, x_c1)
+        x = self.up4(x, x_c2)    
+        x = self.final_conv(x)
+        return x 
 
 if __name__ == '__main__':
-    input = torch.randn((1, 32, 16, 16)).cuda()
 
-    decoder = DecoderMultiClass(
-        input_size=(16,16), 
-        in_chans=32,
-        output_size=(256,256),
-        inter_chans=32,
-        out_chans=1,
+
+    decoder = DecoderMultiClassMod(
+        in_chans = 32, 
+        inter_chans= [512, 64, 32, 16],
+        out_chans = 1, 
+        num_chans_CNN=[128, 64, 32],
     ).cuda()
 
-    output = decoder(input)
+    x = torch.randn((1, 32, 16, 16), device='cuda')
+    x_c0 = torch.randn((1, 128, 32, 32), device='cuda')
+    x_c1 = torch.randn((1, 64, 64, 64), device='cuda')
+    x_c2 = torch.randn((1, 32, 128, 128), device='cuda')
+    output = decoder(x, x_c0, x_c1, x_c2)
 
-    # from torchsummary import summary 
-    # model = DecoderPlus(
-    #     input_size=(16,16),
+    # input = torch.randn((1, 32, 16, 16)).cuda()
+
+    # decoder = DecoderMultiClass(
+    #     input_size=(16,16), 
+    #     in_chans=32,
     #     output_size=(256,256),
-    #     inter_chans=32, 
-    #     out_chans=1
-    # )
-
-    # summary(
-    #     model=model.cuda(),
-    #     input_size=input,
-    #     batch_size=batch_size
-    # )
+    #     inter_chans=32,
+    #     out_chans=1,
+    # ).cuda()

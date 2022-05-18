@@ -8,7 +8,7 @@ from timm.models.vision_transformer import default_cfgs
 
 from .ViT import VisionTransformer
 from .decoder import DecoderLinear, MaskTransformer
-from .decoder_new import DecoderPlus
+from .decoder_new import DecoderMultiClassMod, DecoderPlus, DecoderMultiClass
 from .utils import checkpoint_filter_fn, padding, unpadding
 
 def create_vit(model_cfg):
@@ -60,12 +60,15 @@ def create_decoder(encoder, decoder_cfg, branch=''):
         raise ValueError(f"Unknown decoder: {name}")
     return decoder
 
-class Transformer(nn.Module):
+class TransformerV3(nn.Module):
     def __init__(
         self,
         encoder,
         decoder,
         n_cls,
+        num_outputs_trans=32,
+        num_chans_CNN=[128, 64, 32],
+        inter_chans= [512, 64, 32, 16],
     ):
         super().__init__()
         self.n_cls = n_cls
@@ -78,11 +81,11 @@ class Transformer(nn.Module):
         # 256x256
         self.use_decoderPlus = True
         print(f'Using decoderPlus: ', self.use_decoderPlus)
-        self.decoderPlus = DecoderPlus(
-            input_size=(16,16), 
-            output_size=(256,256),
-            inter_chans=32,
-            out_chans=1
+        self.decoderPlus = DecoderMultiClassMod(
+            in_chans = num_outputs_trans, 
+            inter_chans=inter_chans,
+            out_chans = 1, 
+            num_chans_CNN=num_chans_CNN,
         )
 
     @torch.jit.ignore
@@ -95,7 +98,7 @@ class Transformer(nn.Module):
         )
         return nwd_params
 
-    def forward(self, im):
+    def forward(self, im, x_c0, x_c1, x_c2):
         H_ori, W_ori = im.size(2), im.size(3)
         im = padding(im, self.patch_size)
         H, W = im.size(2), im.size(3)
@@ -150,73 +153,36 @@ class Transformer(nn.Module):
                 print(f'patch_size: {self.patch_size}')
 
         if self.use_decoderPlus:
-            masks = self.decoderPlus(masks)
+            masks = self.decoderPlus(masks, x_c0, x_c1, x_c2)
         else:
             masks = F.interpolate(masks, size=(H, W), mode="bilinear") # output: torch.Size([16, 1, 256, 256])
         masks = unpadding(masks, (H_ori, W_ori)) # output: torch.Size([16, 1, 256, 256])
         return masks
 
 
-def create_transformer(model_cfg, decoder='linear'):
+def create_transformerV3(model_cfg, num_chans_CNN, inter_chans, decoder='linear'):
     model_cfg = model_cfg.copy()
     decoder_cfg = model_cfg.pop("decoder")
     decoder_cfg["n_cls"] = model_cfg["n_cls"]
     decoder_cfg['d_model'] = model_cfg['d_model']
 
+
+    num_output_trans = model_cfg['num_output_trans']
+    print(f'num_output_trans in create_transformer: {num_output_trans}')
+    # num_output_trans = 64
+
+    model_cfg['n_cls'] = num_output_trans
+    decoder_cfg['n_cls'] = num_output_trans
     encoder = create_vit(model_cfg)
     decoder = create_decoder(encoder, decoder_cfg)
-    model = Transformer(encoder, decoder, n_cls=model_cfg["n_cls"])
+    model = TransformerV3(
+        encoder, 
+        decoder, 
+        n_cls=model_cfg["n_cls"],
+        num_outputs_trans=num_output_trans,
+        num_outputs_trans=num_output_trans,
+        num_chans_CNN=num_chans_CNN,
+        inter_chans=inter_chans,
+    )
 
     return model
-
-if __name__ == '__main__':
-    import yaml 
-    from pathlib import Path 
-
-    backbone = 'vit_base_patch16_384' # vit_base_patch16_384, vit_base_patch32_384
-    decoder = 'linear'
-    image_height = 256
-    image_width = 256
-    batch_size = 2 
-    dropout = 0.
-    drop_path_rate = 0.1
-    n_cls = 1 
-
-    trans_cfg = yaml.load(open("transformer_presets.yml", "r"), 
-        Loader=yaml.FullLoader)
-    trans_model_cfg = trans_cfg['model'][backbone]
-
-    if "mask_transformer" in decoder: # always wack, hence default is linear - REWRITE THIS AND TAKE MASK TRANSFORMER OUT 
-        decoder_cfg = trans_cfg["decoder"]["mask_transformer"]
-        # raise ValueError(f'Were not doing anything but linear decoder.')
-    else:
-        decoder_cfg = trans_cfg["decoder"][decoder]
-
-    # images
-    trans_model_cfg['image_size'] = (image_height, image_width)
-    trans_model_cfg["dropout"] = dropout
-    trans_model_cfg["drop_path_rate"] = drop_path_rate
-    trans_model_cfg['backbone'] = backbone 
-    trans_model_cfg['n_cls'] = n_cls
-    decoder_cfg['name'] = decoder 
-    trans_model_cfg['decoder'] = decoder_cfg
-
-    patch_size = trans_model_cfg['patch_size']
-    print(trans_model_cfg)
-
-    n_ = batch_size; c_ = 3; h_ = image_height; w_ = image_width  
-    input = torch.rand(n_, c_, h_, w_)
-    mask = torch.rand(n_, c_, h_, w_)
-
-    print(f'(input, mask).shape: {input.shape, mask.shape}')
-    model = create_transformer(
-        model_cfg = trans_model_cfg,
-        decoder = decoder
-    ).cuda()
-
-    # model = create_vit(trans_model_cfg).cuda()
-
-    from torchsummary import summary 
-    summary(model = model, input_size = (c_, h_, w_),  batch_size = n_)
-
-    output = model(torch.randn((2, 3, 256 ,256), device='cuda')); print(output.shape)

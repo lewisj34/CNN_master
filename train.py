@@ -366,6 +366,8 @@ def main(
             trans_model_cfg,
             with_fusion=True,
         ).cuda()
+        count_parameters(model)
+        exit(1)
     elif model_name == 'NewZedFusionNetworkNoOneHalf':
         from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkNoOneHalf
         model = NewZedFusionNetworkNoOneHalf(
@@ -461,11 +463,24 @@ def main(
             patch_size=16,
         ).cuda()
     elif model_name == "NewZedFusionNetworkMOD":
-        cnn_model_cfg["num_output_channels_cnn"] = [64 // 2, 128 // 2, 256 // 2, 512 // 2, 512 // 2, 256 // 2, 128 // 2, 64 // 2, 64 // 2]
+        cnn_model_cfg["num_output_channels_cnn"] = [32, 64, 64, 128, 256, 512, 256, 128, 64]
         trans_model_cfg["trans_decoder_inter_chans"] = [256, 64, 32, 16]
 
         from seg.model.Fusion.modZedFusion import NewZedFusionNetworkMOD
         model = NewZedFusionNetworkMOD(
+            cnn_model_cfg,
+            trans_model_cfg,
+            num_output_channels_cnn=cnn_model_cfg["num_output_channels_cnn"],
+            trans_decoder_inter_chans=trans_model_cfg["trans_decoder_inter_chans"],
+        ).cuda()
+        count_parameters(model)
+        res = model(torch.randn((2, 3, 256, 256), device='cuda'))
+        exit(1)
+    elif model_name == "NewZedFusionNetworkMODPWOut":
+        cnn_model_cfg["num_output_channels_cnn"] = [64 // 2, 128 // 2, 256, 512, 512, 256, 128, 64 // 2, 64 // 2]
+        trans_model_cfg["trans_decoder_inter_chans"] = [128, 32, 16, 8]
+        from seg.model.Fusion.modZedFusion import NewZedFusionNetworkMODPWOut
+        model = NewZedFusionNetworkMODPWOut(
             cnn_model_cfg,
             trans_model_cfg,
             num_output_channels_cnn=cnn_model_cfg["num_output_channels_cnn"],

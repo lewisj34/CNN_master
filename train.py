@@ -442,14 +442,16 @@ def main(
         model = FusionNetworkRFB(
             cnn_model_cfg,
             trans_model_cfg,
-            out_chans = [64, 32, 16, 8],
+            out_chans = [256, 128, 64, 32],
+            # out_chans = [64, 32, 16, 8]
+            # out_chans = [512, 256, 128, 64],
             dilation1=1,
             dilation2=2,
             dilation3=3,
         ).cuda()
         # Total Trainable Params: 96.715725M
-        # count_parameters(model)
-        # exit(1)
+        count_parameters(model)
+        exit(1)
     elif model_name == 'unet_invert':
         from seg.model.invert_unet import iUnet
         model = iUnet(

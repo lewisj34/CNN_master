@@ -126,7 +126,7 @@ class DecoderMultiClassMod(nn.Module):
             scale_factor=2,
         )
         self.up2 = UpMod(
-            in_channels = inter_chans[0] + num_chans_CNN[0], 
+            in_channels = inter_chans[0] + num_chans_CNN[2], 
             out_channels = inter_chans[1],
             scale_factor = 2,
         )
@@ -137,7 +137,7 @@ class DecoderMultiClassMod(nn.Module):
             scale_factor=2,
         )
         self.up4 = UpMod(
-            in_channels = inter_chans[2] + num_chans_CNN[2],
+            in_channels = inter_chans[2] + num_chans_CNN[0],
             out_channels = inter_chans[3],
             scale_factor = 2,
         )
@@ -147,7 +147,8 @@ class DecoderMultiClassMod(nn.Module):
         x = self.up1(x)
         x = self.up2(x, x_c0)
         x = self.up3(x, x_c1)
-        x = self.up4(x, x_c2)    
+        x = self.up4(x, x_c2) 
+        x = F.upsample_bilinear(x, scale_factor=2)   
         x = self.final_conv(x)
         return x 
 

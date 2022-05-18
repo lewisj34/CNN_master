@@ -180,7 +180,6 @@ def create_transformerV3(model_cfg, num_chans_CNN, inter_chans, decoder='linear'
         decoder, 
         n_cls=model_cfg["n_cls"],
         num_outputs_trans=num_output_trans,
-        num_outputs_trans=num_output_trans,
         num_chans_CNN=num_chans_CNN,
         inter_chans=inter_chans,
     )

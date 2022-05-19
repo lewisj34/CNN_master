@@ -56,12 +56,55 @@ def speed_testing(model, input_height, input_width, device_id=0, num_iters=10000
     print(f'[SPEED EVAL]: Completed {num_iters} iterations of inference')
     print(f'[SPEED EVAL]: Total time elapsed {sum(time_list) / 60} mins')
     print(f'[SPEED EVAL]: Average time per iter {sum(time_list)/num_iters} sec')
-    print('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/10000)))
+    print('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/num_iters)))
 
     logging.info(f'[SPEED EVAL]: Completed {num_iters} iterations of inference')
     logging.info(f'[SPEED EVAL]: Total time elapsed {sum(time_list) / 60} mins')
     logging.info(f'[SPEED EVAL]: Average time per iter {sum(time_list)/num_iters} sec')
-    logging.info('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/10000)))
+    logging.info('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/num_iters)))
+    # print("\tTotal time cost: {}s".format(sum(time_list)))
+    # print("\t     + Average time cost: {}s".format(sum(time_list)/10000))
+    # print("\t     + Frame Per Second: {:.2f}".format(1/(sum(time_list)/10000)))
+
+def speed_testing_multi_gpu(model, input_height, input_width, num_iters=10000):
+    ''' 
+    Evaluates the FPS for a model 
+        @model: the pytorch model (nn.Module)
+        @input_height: the resized input height for the model 
+        @input_width: the resized input width for the model 
+        @num_iters: the number of iterations to run the model for 
+        @device_id: GPU id 
+    '''
+    # cuDnn configurations
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.deterministic = True
+
+    print('\n[SPEED EVAL]: Evaluating speed of model...')
+    logging.info('\n[SPEED EVAL]: Evaluating speed of model...')
+    model = model.to('cuda')
+    random_input = torch.randn(1, 3, input_height, input_width).to('cuda')
+
+    model.eval()
+
+    time_list = []
+    for i in tqdm(range(num_iters + 1)):
+        torch.cuda.synchronize()
+        tic = time.time()
+        model(random_input)
+        torch.cuda.synchronize()
+        # the first iteration time cost much higher, so exclude the first iteration
+        #print(time.time()-tic)
+        time_list.append(time.time()-tic)
+    time_list = time_list[1:]
+    print(f'[SPEED EVAL]: Completed {num_iters} iterations of inference')
+    print(f'[SPEED EVAL]: Total time elapsed {sum(time_list) / 60} mins')
+    print(f'[SPEED EVAL]: Average time per iter {sum(time_list)/num_iters} sec')
+    print('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/num_iters)))
+
+    logging.info(f'[SPEED EVAL]: Completed {num_iters} iterations of inference')
+    logging.info(f'[SPEED EVAL]: Total time elapsed {sum(time_list) / 60} mins')
+    logging.info(f'[SPEED EVAL]: Average time per iter {sum(time_list)/num_iters} sec')
+    logging.info('[SPEED EVAL]: FPS: {:.2f}'.format(1/(sum(time_list)/num_iters)))
     # print("\tTotal time cost: {}s".format(sum(time_list)))
     # print("\t     + Average time cost: {}s".format(sum(time_list)/10000))
     # print("\t     + Frame Per Second: {:.2f}".format(1/(sum(time_list)/10000)))
@@ -265,7 +308,7 @@ def train_one_epochV2(
                 logging.info(f'Saving checkpoint to: {checkpt_save_file}')
 
         if speed_test:
-            if (curr_epoch+1) % 5 == 0: 
+            if (curr_epoch+1) % 1 == 0: 
                 speed_testing(
                     model, 
                     images.shape[2], 
@@ -273,6 +316,8 @@ def train_one_epochV2(
                     device_id=0, 
                     num_iters=10000
                 )
+                if curr_epoch == 5:
+                    exit(1)
 
         return best_loss, meanTestLoss.item(), meanTestIoU.item(), meanTestDice.item(), meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
 
@@ -321,7 +366,7 @@ def train_one_epochV2(
                 logging.info(f'Saving checkpoint to: {checkpt_save_file}')
 
         if speed_test:
-            if (curr_epoch+1) % 5 == 0: 
+            if (curr_epoch+1) % 1 == 0: 
                 speed_testing(
                     model, 
                     images.shape[2], 
@@ -329,6 +374,8 @@ def train_one_epochV2(
                     device_id=0, 
                     num_iters=10000
                 )
+                if curr_epoch == 5:
+                    exit(1)
 
         return best_loss, test_loss_matrix, meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
 

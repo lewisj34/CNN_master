@@ -94,8 +94,8 @@ class TransformerV2(nn.Module):
                     dilation2=3,
                 )
             else:
-                print(f'Just using decoderPlus with RFB: ', self.use_decoderPlus)
-                self.decoderPlus = DecoderMultiClassRFB(
+                print(f'Just using decoderPlus (no dilation / no RFB): ', self.use_decoderPlus)
+                self.decoderPlus = DecoderMultiClass(
                     input_size=(16,16), 
                     in_chans=num_outputs_trans,
                     output_size=(256,256),

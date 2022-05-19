@@ -162,7 +162,7 @@ class DecoderMultiClassDilation(nn.Module):
         dilation1=1,
         dilation2=3,
     ):
-        super(DecoderMultiClass, self).__init__()
+        super(DecoderMultiClassDilation, self).__init__()
         assert input_size == (16, 16), \
             f'input_size must be corresponding to [N, 1, 16, 16]' 
             # haven't done for [N, 1, 32, 32] yet
@@ -206,7 +206,7 @@ class DecoderMultiClassDilatioaAndRFB(nn.Module):
         dilation1=1,
         dilation2=3,
     ):
-        super(DecoderMultiClass, self).__init__()
+        super(DecoderMultiClassDilatioaAndRFB, self).__init__()
         assert input_size == (16, 16), \
             f'input_size must be corresponding to [N, 1, 16, 16]' 
             # haven't done for [N, 1, 32, 32] yet
@@ -220,7 +220,7 @@ class DecoderMultiClassDilatioaAndRFB(nn.Module):
             dilation=dilation1,
         )
         self.rfb = RFB_modified(inter_chans, inter_chans)
-        
+
         self.up2 = UpModDilated(
             in_channels = inter_chans, 
             out_channels = inter_chans,

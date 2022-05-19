@@ -79,11 +79,11 @@ class TransformerV2(nn.Module):
         # input sizes other than a patch size of 16x16, and an output size of 
         # 256x256
         self.use_decoderPlus = True
-        # self.useDilatedDecoderPlus = False
+        self.useDilatedDecoderPlus = False
         if self.use_decoderPlus:
-            if self.useDilatedDecoderAndRFB:
-                print(f'\n\n\n\nWARNING in  file: {__file__}: Just using decoderPlus with dilation: \n\n\n', self.use_decoderPlus)
-                self.decoderPlus = DecoderMultiClassDilatioaAndRFB(
+            if self.useDilatedDecoderPlus:
+                print(f'\nWARNING in  file: {__file__}: Just using decoderPlus with dilation: ', self.use_decoderPlus)
+                self.decoderPlus = DecoderMultiClassDilation(
                     input_size=(16,16), 
                     in_chans=num_outputs_trans,
                     output_size=(256,256),

@@ -9,7 +9,7 @@ from timm.models.vision_transformer import default_cfgs
 
 from .ViT import VisionTransformer
 from .decoder import DecoderLinear, MaskTransformer
-from .decoder_new import DecoderMultiClassDilatioaAndRFB, DecoderMultiClassDilation, DecoderPlus, DecoderMultiClass
+from .decoder_new import DecoderMultiClassDilatioaAndRFB, DecoderMultiClassDilation, DecoderMultiClassDilationAndSCSE, DecoderPlus, DecoderMultiClass
 from .decoder_new_new import DecoderMultiClassRFB
 from .utils import checkpoint_filter_fn, padding, unpadding
 
@@ -84,7 +84,7 @@ class TransformerV2(nn.Module):
         if self.use_decoderPlus:
             if self.useDilatedDecoderPlus:
                 print(f'\nWARNING in  file: {__file__}: Just using decoderPlus with dilation: ', self.use_decoderPlus)
-                self.decoderPlus = DecoderMultiClassDilation(
+                self.decoderPlus = DecoderMultiClassDilationAndSCSE(
                     input_size=(16,16), 
                     in_chans=num_outputs_trans,
                     output_size=(256,256),

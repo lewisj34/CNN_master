@@ -3,6 +3,7 @@ import torch.nn as nn
 from einops import rearrange
 
 from seg.model.Fusion.RFB_Fusion.parts import RFB_modified
+from seg.model.zed.parts import SCSEModule
 
 from .blocks import Block
 from .utils import init_weights
@@ -193,6 +194,52 @@ class DecoderMultiClassDilation(nn.Module):
         x = self.conv(x)
         # x = torch.cat([x, x_final_dec], dim=1)
         x = self.final_conv(x)
+        return x 
+
+class DecoderMultiClassDilationAndSCSE(nn.Module):
+    def __init__(
+        self,
+        input_size=(16, 16),
+        in_chans=1,
+        output_size=(256, 256),
+        inter_chans=32,
+        out_chans=1,
+        dilation1=1,
+        dilation2=3,
+    ):
+        super(DecoderMultiClassDilationAndSCSE, self).__init__()
+        assert input_size == (16, 16), \
+            f'input_size must be corresponding to [N, 1, 16, 16]' 
+            # haven't done for [N, 1, 32, 32] yet
+
+        self.output_size = output_size
+        self.up1 = UpModDilated(
+            in_channels = in_chans, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+            dilation=dilation1,
+        )
+        self.up2 = UpModDilated(
+            in_channels = inter_chans, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+            dilation=dilation2,
+        )
+        self.conv = nn.Conv2d(inter_chans, out_chans, kernel_size=1)
+        print(f'num_outputs in DecoderMultiClass: {in_chans}')
+        print(f'WARNING: This value above should be the same as the transformer and fusion model. Check to see if its right.')
+        self.final_conv = nn.Conv2d(in_chans, 1, kernel_size=1) #idk why we have this named in_chans but in_chans legit just becomes num_output_trans
+        self.scse = SCSEModule(1, 1)
+    def forward(self, x):
+        # x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
+        x = self.up1(x)
+        x = self.up2(x)
+        x = self.conv(x)
+        # x = torch.cat([x, x_final_dec], dim=1)
+        x = self.final_conv(x)
+        x = self.scse(x)
         return x 
 
 class DecoderMultiClassDilatioaAndRFB(nn.Module):

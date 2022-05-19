@@ -8,7 +8,7 @@ from timm.models.vision_transformer import default_cfgs
 
 from .ViT import VisionTransformer
 from .decoder import DecoderLinear, MaskTransformer
-from .decoder_new import DecoderPlus, DecoderMultiClass
+from .decoder_new import DecoderMultiClassDilation, DecoderPlus, DecoderMultiClass
 from .utils import checkpoint_filter_fn, padding, unpadding
 
 def create_vit(model_cfg):
@@ -78,14 +78,28 @@ class TransformerV2(nn.Module):
         # input sizes other than a patch size of 16x16, and an output size of 
         # 256x256
         self.use_decoderPlus = True
-        print(f'Using decoderPlus: ', self.use_decoderPlus)
-        self.decoderPlus = DecoderMultiClass(
-            input_size=(16,16), 
-            in_chans=num_outputs_trans,
-            output_size=(256,256),
-            inter_chans=32,
-            out_chans=n_cls,
-        )
+        self.useDilatedDecoderPlus = True
+        if self.use_decoderPlus:
+            if self.useDilatedDecoderPlus:
+                print(f'\nWARNING in  file: {__file__}: Just using decoderPlus with dilation: ', self.use_decoderPlus)
+                self.decoderPlus = DecoderMultiClassDilation(
+                    input_size=(16,16), 
+                    in_chans=num_outputs_trans,
+                    output_size=(256,256),
+                    inter_chans=32,
+                    out_chans=n_cls,
+                    dilation1=1,
+                    dilation2=3,
+                )
+            else:
+                print(f'Just using decoderPlus (no dilation): ', self.use_decoderPlus)
+                self.decoderPlus = DecoderMultiClass(
+                    input_size=(16,16), 
+                    in_chans=num_outputs_trans,
+                    output_size=(256,256),
+                    inter_chans=32,
+                    out_chans=n_cls,
+                )
 
     @torch.jit.ignore
     def no_weight_decay(self):

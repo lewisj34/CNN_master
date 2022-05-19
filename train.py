@@ -463,7 +463,7 @@ def main(
             patch_size=16,
         ).cuda()
     elif model_name == "NewZedFusionNetworkMOD":
-        cnn_model_cfg["num_output_channels_cnn"] = [32, 64, 64, 128, 256, 512, 256, 128, 64]
+        cnn_model_cfg["num_output_channels_cnn"] = [64 // 2, 128 // 2, 256 // 2, 512 // 2, 512 // 2, 256 // 2, 128 // 2, 64 // 2, 64 // 2]
         trans_model_cfg["trans_decoder_inter_chans"] = [256, 64, 32, 16]
 
         from seg.model.Fusion.modZedFusion import NewZedFusionNetworkMOD

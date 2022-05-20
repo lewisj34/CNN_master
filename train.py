@@ -493,14 +493,12 @@ def main(
         count_parameters(model)
         res = model(torch.randn((2, 3, 256, 256), device='cuda'))
         exit(1)
-    elif model_name == 'new_fusion_zed_DWSep':
+    elif model_name == 'new_fusion_zed_dwsep':
         from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkDWSep
         model = NewZedFusionNetworkDWSep(
             cnn_model_cfg,
             trans_model_cfg
         ).cuda()
-        count_parameters(model)
-        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

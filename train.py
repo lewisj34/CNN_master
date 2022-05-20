@@ -322,6 +322,9 @@ def main(
             cnn_pretrained=False,
             with_fusion=True,
         ).cuda()
+        print(f'model_name: {model_name}')
+        count_parameters(model)
+        exit(1)
     elif model_name == 'EffNet_B7':
         from z import EffNet_B7
         model = EffNet_B7(
@@ -366,6 +369,9 @@ def main(
             trans_model_cfg,
             with_fusion=True,
         ).cuda()
+        print(f'model_name: {model_name}')
+        count_parameters(model)
+        exit(1)
     elif model_name == 'NewZedFusionNetworkNoOneHalf':
         from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkNoOneHalf
         model = NewZedFusionNetworkNoOneHalf(

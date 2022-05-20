@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from seg.model.CNN.CNN_parts import Down, Up
 from seg.model.siddnet.parts import SuperficialModule
 
+from seg.model.zed.parts import DownDWSep, UpDWSep
+
 '''
 Okay so we want two fusion modules here. One where 
 we decrease the CNN input DOWN to the transformer input (c_dim = 1)
@@ -207,6 +209,59 @@ class MiniEncoderFuse(nn.Module):
             mode='bilinear') 
         return seg_map
 
+class MiniEncoderFuseDWSep(nn.Module):
+    def __init__(
+        self, 
+        in_chan_CNN, 
+        in_chan_TRANS, 
+        intermediate_chan,
+        out_chan=1,
+        stage=None,
+        drop_rate = 0.5
+        ):
+        super(MiniEncoderFuseDWSep, self).__init__()
+
+        stages = ['1_2', '1_4', '1_8', '1_16', '1_32']
+        self.fuse_stage = stage
+        assert self.fuse_stage in stages
+
+        if self.fuse_stage == '1_2':
+            self.scale_factor = 2
+        elif self.fuse_stage == '1_4':
+            self.scale_factor = 4
+        elif self.fuse_stage == '1_8':
+            self.scale_factor = 8 
+        elif self.fuse_stage == '1_16':
+            self.scale_factor = 16
+        elif self.fuse_stage == '1_32':
+            self.scale_factor = 32
+        else:
+            raise ValueError(f'Valid stages for fusion: {stages}')
+
+        self.down1 = DownDWSep(in_chan_CNN + in_chan_TRANS, intermediate_chan)
+        # self.super1 = SuperficialModule(nIn=intermediate_chan)
+        self.down2 = DownDWSep(intermediate_chan, intermediate_chan)
+        self.up1 = UpDWSep(intermediate_chan, intermediate_chan)
+        # self.super2 = SuperficialModule(nIn=intermediate_chan)
+        self.up2 = UpDWSep(intermediate_chan, out_chan)
+
+    def forward(self, x_CNN, x_TRANS):
+        assert(x_CNN.shape[0] == x_TRANS.shape[0] 
+            and x_CNN.shape[2] == x_TRANS.shape[2] 
+            and x_CNN.shape[3] == x_TRANS.shape[3])
+            
+        x = torch.cat([x_CNN, x_TRANS], dim=1) #; print(f'\tcat output {x.shape}')
+        x = self.down1(x) #; print(f'\tdown1 output {x.shape}')
+        # x = self.super1(x)
+        x = self.down2(x) #; print(f'\tdown2 output {x.shape}')
+        x = self.up1(x) #; print(f'\tup1 output {x.shape}')
+        # x = self.super2(x)
+        x = self.up2(x) #; print(f'\tup2 output {x.shape}')
+        seg_map = F.interpolate(
+            x, 
+            scale_factor = self.scale_factor, 
+            mode='bilinear') 
+        return seg_map
 
 if __name__ == '__main__':
     fuse_1_2 = MiniEncoderFuse(256, 64, 64, 1, stage='1_2')

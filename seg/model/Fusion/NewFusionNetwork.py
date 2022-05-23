@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn 
 import yaml
 from pathlib import Path
+from seg.model.Fusion.CondensedFusion import BNRconv3x3
+from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSEFusion
 from seg.model.transformer.transformerV3 import create_transformerV3
 
 from seg.model.zed.zedNet import zedNet, zedNetDWSep, zedNetMod
@@ -320,6 +322,105 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)
         x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+
+        '''
+        self.CNN_BRANCH and self.TRANSFORMER_BRANCH should have same members:
+                { output_1_4, output_1_2 }
+        '''
+        if self.with_fusion:
+            # 1 / 2 - note (kind of wack given that you have to interploate from 1/4)
+            self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch.x_1_2)
+            self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch.x_1_4)
+            self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch.x_1_8)
+            self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch.x_1_16)
+
+            if self.patch_size == 16:
+                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
+                mean = torch.mean(torch.stack(tensor_list), dim=0) 
+                return mean
+            elif self.patch_size == 32:
+                x_1_32 = self.fuse_1_32(self.cnn_branch.x_1_32, self.trans_branch.x_1_32)
+                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
+                mean = torch.mean(torch.stack(tensor_list), dim=0) 
+
+from seg.model.transformer.transformerNoDecoder import create_transformerV4
+class NewZedFusionAttentionTransDecoderDWSepCNN(nn.Module):
+    def __init__(
+        self, 
+        cnn_model_cfg,
+        trans_model_cfg,
+        with_fusion=True,
+        ):
+        super(NewZedFusionAttentionTransDecoderDWSepCNN, self).__init__()
+
+        self.patch_size = cnn_model_cfg['patch_size']
+        assert cnn_model_cfg['patch_size'] == trans_model_cfg['patch_size'], \
+            'patch_size not configd properly, model_cfgs have different values'
+        assert self.patch_size == 16 or self.patch_size == 32, \
+            'patch_size must be {16, 32}'
+
+        self.cnn_branch = zedNetDWSep(
+            n_channels=cnn_model_cfg['in_channels'],
+            n_classes=cnn_model_cfg['num_classes'],
+            patch_size=cnn_model_cfg['patch_size'],
+            bilinear=True,
+            attention=True,
+        )
+        # now populate dimensions 
+        self.cnn_branch.get_dimensions(
+            N_in = cnn_model_cfg['batch_size'],
+            C_in = cnn_model_cfg['in_channels'],
+            H_in = cnn_model_cfg['image_size'][0], 
+            W_in = cnn_model_cfg['image_size'][1]
+        )
+
+        self.trans_branch = create_transformerV4(trans_model_cfg, 
+            decoder='linear') # output should now be [N, num_output_trans, 16, 16]
+
+        num_output_trans = trans_model_cfg['num_output_trans']
+        print(f'num_output_trans: {num_output_trans}')
+
+        in_chans_fuse_1=512
+        in_chans_fuse_2=256
+        inter_chans=32
+
+        self.conv_fuse_1 = BNRconv3x3(in_chans_fuse_1, num_output_trans)
+        self.conv_fuse_2 = BNRconv3x3(in_chans_fuse_2, inter_chans)
+
+        self.decoder_trans = DecoderMultiClassDilationAndSCSEFusion(
+            input_size=(16,16),
+            in_chans=num_output_trans,
+            in_chans_fuse_1=num_output_trans,
+            in_chans_fuse_2=inter_chans, 
+            inter_chans=inter_chans, 
+            out_chans=1,
+            dilation1=1,
+            dilation2=3,
+        )
+        
+
+        # num_output_trans = 64
+
+        self.with_fusion = with_fusion
+        if self.with_fusion:
+            self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
+                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+            self.fuse_1_4 = MiniEncoderFuseDWSep(
+                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+            self.fuse_1_8 = MiniEncoderFuseDWSep(
+                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+            self.fuse_1_16 = MiniEncoderFuseDWSep(
+                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+            if self.patch_size == 32:
+                self.fuse_1_32 = MiniEncoderFuseDWSep(
+                    self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
+
+    def forward(self, images):
+        x_final_cnn = self.cnn_branch(images)
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+        dec_fuse_1_16 = self.conv_fuse_1(self.cnn_branch.x_1_16)
+        dec_fuse_1_4 = self.conv_fuse_2(self.cnn_branch.x_1_4)
+        x_final_trans = self.decoder_trans(x_final_trans, dec_fuse_1_16, dec_fuse_1_4)
 
         '''
         self.CNN_BRANCH and self.TRANSFORMER_BRANCH should have same members:

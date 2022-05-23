@@ -505,8 +505,12 @@ def main(
             cnn_model_cfg,
             trans_model_cfg
         ).cuda()
-        count_parameters(model)
-        exit(1)
+    elif model_name == 'ZedFusionAttentionTransDecoder':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionAttentionTransDecoderDWSepCNN
+        model = NewZedFusionAttentionTransDecoderDWSepCNN(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

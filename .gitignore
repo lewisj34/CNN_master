@@ -43,3 +43,4 @@ dice_max.csv
 *.pyc
 
 dataset_master_loss_files/
+loss_files_test/

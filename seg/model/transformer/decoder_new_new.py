@@ -76,6 +76,14 @@ class DecoderMultiClassRFB(nn.Module):
         x = self.final_conv(x)
         return x 
 
+class DecoderInvert(nn.Module):
+    def __init__(
+        self,
+        
+    ):
+        super().__init__()
+        
+
 if __name__ == '__main__':
     x = torch.randn((2, 1, 16, 16), device='cuda')
     model = DecoderMultiClassRFB().cuda()

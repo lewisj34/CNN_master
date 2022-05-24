@@ -439,9 +439,9 @@ class DecoderMultiClassDilationAndSCSEFusion(nn.Module):
         self.scse = SCSEModule(1, 1)
     def forward(self, x, x_f_1=None, x_f_2=None):
         # x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
-        x = self.up1(x, x_f_1); print(f'up1 x.shape: {x.shape}')
-        x = self.up2(x, x_f_2); print(f'up2 x.shape: {x.shape}')
-        x = self.conv(x); print(f'x.shape after conv: {x.shape}')
+        x = self.up1(x, x_f_1)
+        x = self.up2(x, x_f_2)
+        x = self.conv(x)
         # x = torch.cat([x, x_final_dec], dim=1)
         # x = self.final_conv(x)
         x = self.scse(x)

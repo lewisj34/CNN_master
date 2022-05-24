@@ -308,6 +308,8 @@ def main(
         ).cuda()
     elif model_name == 'just_trans':
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
+        count_parameters(model)
+        exit(1)
     elif model_name == 'transV2':
         model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     elif model_name == 'pranet':
@@ -511,6 +513,17 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
+    elif model_name == 'NPZedFusion':
+        from seg.model.Fusion.NewFusionNetwork import NPZedFusion
+        model = NPZedFusion(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+        # count_parameters(model)
+        # input = torch.randn((1, 3, 256, 256), device='cuda')
+        # output = model(input)
+        # print(f'output.shape: {output.shape}')
+        # exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

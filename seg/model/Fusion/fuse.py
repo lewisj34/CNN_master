@@ -246,9 +246,12 @@ class MiniEncoderFuseDWSep(nn.Module):
         self.up2 = UpDWSep(intermediate_chan, out_chan)
 
     def forward(self, x_CNN, x_TRANS):
-        assert(x_CNN.shape[0] == x_TRANS.shape[0] 
-            and x_CNN.shape[2] == x_TRANS.shape[2] 
-            and x_CNN.shape[3] == x_TRANS.shape[3])
+        assert x_CNN.shape[0] == x_TRANS.shape[0], \
+            f'N, batch_size different. Given: {x_CNN.shape[0], x_TRANS.shape[0]}'
+        assert x_CNN.shape[2] == x_TRANS.shape[2], \
+            f'H, height different. Given: {x_CNN.shape[2], x_TRANS.shape[2]}'
+        assert x_CNN.shape[3] == x_TRANS.shape[3], \
+            f'W, width different. Given: {x_CNN.shape[3], x_TRANS.shape[3]}'
             
         x = torch.cat([x_CNN, x_TRANS], dim=1) #; print(f'\tcat output {x.shape}')
         x = self.down1(x) #; print(f'\tdown1 output {x.shape}')

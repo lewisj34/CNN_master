@@ -514,8 +514,23 @@ def main(
             trans_model_cfg,
         ).cuda()
     elif model_name == 'NPZedFusion':
+        # kind of like a smaller transformer repeated twice (so two small transformers)
+        # where the input is from the CNN and reshaped not the actual images themselves
         from seg.model.Fusion.NewFusionNetwork import NPZedFusion
         model = NPZedFusion(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+        # count_parameters(model)
+        # input = torch.randn((1, 3, 256, 256), device='cuda')
+        # output = model(input)
+        # print(f'output.shape: {output.shape}')
+        # exit(1)
+    elif model_name == 'NPZedFusionNoRFB':
+        # kind of like a smaller transformer repeated twice (so two small transformers)
+        # where the input is from the CNN and reshaped not the actual images themselves
+        from seg.model.Fusion.NewFusionNetwork import NPZedFusionNoRFB
+        model = NPZedFusionNoRFB(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()

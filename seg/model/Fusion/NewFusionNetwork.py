@@ -553,3 +553,112 @@ class NPZedFusion(nn.Module):
         tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
         mean = torch.mean(torch.stack(tensor_list), dim=0) 
         return mean
+
+class NPZedFusionNoRFB(nn.Module):
+    def __init__(
+        self, 
+        cnn_model_cfg,
+        trans_model_cfg,
+        ):
+        super(NPZedFusionNoRFB, self).__init__()
+
+        tbackbone = trans_model_cfg['backbone']
+        assert trans_model_cfg['backbone'] == 'vit_small_patch16_384', \
+            f'backbone chosen: {tbackbone}Trying to keep this light: use vit_small_patch16_384'
+
+        self.cnn_branch = zedNet(
+            n_channels=cnn_model_cfg['in_channels'],
+            n_classes=cnn_model_cfg['num_classes'],
+            patch_size=cnn_model_cfg['patch_size'],
+            bilinear=True,
+            attention=True,
+        )
+        
+        self.cnn_branch.get_dimensions(
+            N_in = cnn_model_cfg['batch_size'],
+            C_in = cnn_model_cfg['in_channels'],
+            H_in = cnn_model_cfg['image_size'][0], 
+            W_in = cnn_model_cfg['image_size'][1]
+        )
+
+        num_output_trans = trans_model_cfg['num_output_trans']
+        print(f'num_output_trans: {num_output_trans}')
+
+        self.output_size = (trans_model_cfg['image_size'][0], trans_model_cfg['image_size'][1])
+        trans_model_cfg['image_size'] = (trans_model_cfg['image_size'][0] // 2, trans_model_cfg['image_size'][1] // 2)
+        self.trans_entrance_size = trans_model_cfg['image_size']
+
+        self.trans_branch_0_0 = nn.Sequential(
+            nn.Conv2d(self.cnn_branch.x_1_2.shape[1], self.cnn_branch.x_1_2.shape[1], kernel_size=3, padding=1, groups=self.cnn_branch.x_1_2.shape[1]),
+            nn.Conv2d(self.cnn_branch.x_1_2.shape[1], num_output_trans, kernel_size=1),
+            nn.BatchNorm2d(num_output_trans),
+            nn.SiLU(inplace=True)
+        )
+        self.trans_branch_DWSep_conv_BNS_1 = nn.Sequential(
+            nn.Conv2d(num_output_trans, num_output_trans, kernel_size=3, padding=1, groups=num_output_trans),
+            nn.Conv2d(num_output_trans, 3, kernel_size=1),
+            nn.BatchNorm2d(3),
+            nn.SiLU(inplace=True)
+        )
+        self.trans_branch_1 = create_transformerV4(trans_model_cfg)
+
+        self.trans_branch_DWSep_conv_BNS_2 = nn.Sequential(
+            nn.Conv2d(num_output_trans, num_output_trans, kernel_size=3, padding=1, groups=num_output_trans),
+            nn.Conv2d(num_output_trans, 3, kernel_size=1),
+            nn.BatchNorm2d(3),
+            nn.SiLU(inplace=True)
+        )
+        self.trans_branch_2 = create_transformerV4(trans_model_cfg)
+
+        # trans decoder stuff 
+        in_chans_fuse_1=512
+        in_chans_fuse_2=256
+        inter_chans=32
+
+        self.conv_fuse_1 = DoubleConvDWSep(in_chans_fuse_1, num_output_trans)
+        self.conv_fuse_2 = DoubleConvDWSep(in_chans_fuse_2, inter_chans) 
+
+        self.decoder_trans = DecoderMultiClassDilationAndSCSEFusion(
+            input_size=(16,16),
+            in_chans=num_output_trans,
+            in_chans_fuse_1=num_output_trans,
+            in_chans_fuse_2=inter_chans, 
+            inter_chans=inter_chans, 
+            out_chans=1,
+            dilation1=1,
+            dilation2=3,
+        )
+
+        self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
+            self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+        self.fuse_1_4 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+        self.fuse_1_8 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+        self.fuse_1_16 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+
+    def forward(self, images):
+        x_final_cnn = self.cnn_branch(images)
+
+        x_trans = self.trans_branch_0_0(self.cnn_branch.x_1_2)
+        x_trans = F.upsample_bilinear(x_trans, size=self.trans_entrance_size)
+        x_trans = self.trans_branch_DWSep_conv_BNS_1(x_trans)
+
+        x_trans = self.trans_branch_1(x_trans)
+        x_trans = F.upsample_bilinear(x_trans, size=self.trans_entrance_size)
+        x_trans = self.trans_branch_DWSep_conv_BNS_2(x_trans)
+        x_trans = self.trans_branch_2(x_trans)
+
+        dec_fuse_1_16 = self.conv_fuse_1(self.cnn_branch.x_1_16)
+        dec_fuse_1_4 = self.conv_fuse_2(self.cnn_branch.x_1_4)
+        x_final_trans = self.decoder_trans(x_trans, dec_fuse_1_16, dec_fuse_1_4)
+
+        self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, F.upsample_bilinear(self.trans_branch_2.x_1_2, scale_factor=2))
+        self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, F.upsample_bilinear(self.trans_branch_2.x_1_4, scale_factor=2))
+        self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, F.upsample_bilinear(self.trans_branch_2.x_1_8, scale_factor=2))
+        self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, F.upsample_bilinear(self.trans_branch_2.x_1_16, scale_factor=2))
+
+        tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
+        mean = torch.mean(torch.stack(tensor_list), dim=0) 
+        return mean

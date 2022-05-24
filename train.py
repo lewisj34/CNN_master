@@ -4,6 +4,7 @@ import click
 import yaml
 import time
 import logging 
+import socket
 
 from pathlib import Path
 from seg.model.PraNet.lib.PraNet_Res2Net import PraNet
@@ -555,7 +556,10 @@ def main(
             exit(1)
         useParallel=True
         if useParallel:
-            model = torch.nn.DataParallel(model)
+            if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca':
+                model = torch.nn.DataParallel(model, device_ids=[0])
+            else:
+                model = torch.nn.DataParallel(model)
             model = model.cuda()
             print(f'Creating parallel training process. WARNING: This overwrites the model name and changes the name.')
             # print('Not inputting parallel training process right now. Too many problems with CE-YC-dlearn2.')

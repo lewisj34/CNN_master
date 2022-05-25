@@ -447,6 +447,45 @@ class DecoderMultiClassDilationAndSCSEFusion(nn.Module):
         x = self.scse(x)
         return x 
 
+class DecoderMultiClassDilationAndSCSEFusionJustOne(nn.Module):
+    def __init__(
+        self,
+        input_size=(16, 16),
+        in_chans=1,
+        in_chans_fuse_1=0,
+        output_size=(256, 256),
+        inter_chans=32,
+        out_chans=1,
+        dilation1=1,
+    ):
+        super(DecoderMultiClassDilationAndSCSEFusionJustOne, self).__init__()
+        assert input_size == (16, 16), \
+            f'input_size must be corresponding to [N, 1, 16, 16]' 
+            # haven't done for [N, 1, 32, 32] yet
+
+        self.output_size = output_size
+        self.up1 = UpModDilatedBothX1andX2ScaledBEFOREConv(
+            in_channels = in_chans + in_chans_fuse_1, 
+            out_channels = inter_chans,
+            bilinear=True,
+            scale_factor=4,
+            dilation=dilation1,
+        )
+        self.upsamp = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False)
+        self.conv = nn.Conv2d(inter_chans, out_chans, kernel_size=1)
+        print(f'num_outputs in DecoderMultiClass: {in_chans}')
+        print(f'WARNING: This value above should be the same as the transformer and fusion model. Check to see if its right.')
+        # self.final_conv = nn.Conv2d(in_chans, 1, kernel_size=1) #idk why we have this named in_chans but in_chans legit just becomes num_output_trans
+        self.scse = SCSEModule(1, 1)
+    def forward(self, x, x_f_1=None, x_f_2=None):
+        # x_final_dec = F.upsample_bilinear(x, size=self.output_size) # use this for attn
+        x = self.up1(x, x_f_1)
+        x = self.upsamp(x)
+        x = self.conv(x)
+        # x = torch.cat([x, x_final_dec], dim=1)
+        # x = self.final_conv(x)
+        x = self.scse(x)
+        return x 
 
 class DecoderMultiClassDilatioaAndRFB(nn.Module):
     def __init__(

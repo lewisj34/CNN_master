@@ -559,11 +559,12 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
-        count_parameters(model)
-        exit(1)
     elif model_name == 'SingleTransformerZedFusionV2':
-        # kind of like a smaller transformer repeated twice (so two small transformers)
-        # where the input is from the CNN and reshaped not the actual images themselves
+        # Uses a different entrance flow compared to the previous "SingleTransformer" model
+        # which used the output from the CNN at x_1_2, then upsampled it and then fed it into the big transformer
+        # this one puts through the images through 2 3x3 DW sep convolutions with Silu and BN, convolves them
+        # up to 16 channels, then back down to 3, and then feeds what is ultiamtely the same dimension as the input
+        # into the CNN and the transformer 
         from seg.model.Fusion.NewFusionNetwork import SingleTransformerZedFusionV2
         model = SingleTransformerZedFusionV2(
             cnn_model_cfg,
@@ -574,6 +575,13 @@ def main(
         # output = model(input)
         # print(f'output.shape: {output.shape}')
         # exit(1)
+    elif model_name == 'SingleTransformerZedFusionV2NoAttentionDecoder':
+        # same as SingleTransformerV2 but it does not have attention in the decoder
+        from seg.model.Fusion.NewFusionNetwork import SingleTransformerZedFusionV2NoAttentionDecoder
+        model = SingleTransformerZedFusionV2NoAttentionDecoder(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

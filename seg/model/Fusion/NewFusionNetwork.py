@@ -10,7 +10,7 @@ import yaml
 from pathlib import Path
 from seg.model.Fusion.CondensedFusion import BNRconv3x3
 from seg.model.alt_cnns.pranetSimple import RFB_modified
-from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSEFusion, DecoderMultiClassDilationAndSCSEFusionJustOne, UpModDilatedDWSep, UpModDilated
+from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSE, DecoderMultiClassDilationAndSCSEFusion, DecoderMultiClassDilationAndSCSEFusionJustOne, DecoderMultiClassDilationAndSCSEReduced, UpModDilatedDWSep, UpModDilated
 from seg.model.transformer.transformerV3 import create_transformerV3
 
 from seg.model.zed.zedNet import zedNet, zedNetDWSep, zedNetMod
@@ -949,6 +949,89 @@ class SingleTransformerZedFusionV2(nn.Module):
 
         dec_fuse_1_16 = self.conv_fuse_1(self.cnn_branch.x_1_16)
         x_final_trans = self.decoder_trans(x_trans, dec_fuse_1_16)
+
+        self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch_1.x_1_2)
+        self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch_1.x_1_4)
+        self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch_1.x_1_8)
+        self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch_1.x_1_16)
+
+        tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
+        mean = torch.mean(torch.stack(tensor_list), dim=0) 
+        return mean
+
+class SingleTransformerZedFusionV2NoAttentionDecoder(nn.Module):
+    def __init__(
+        self, 
+        cnn_model_cfg,
+        trans_model_cfg,
+        ):
+        super(SingleTransformerZedFusionV2NoAttentionDecoder, self).__init__()
+
+        assert trans_model_cfg['backbone'] == 'vit_base_patch16_384', \
+            f'were only use the big one for now'
+        
+        self.cnn_branch = zedNet(
+            n_channels=cnn_model_cfg['in_channels'],
+            n_classes=cnn_model_cfg['num_classes'],
+            patch_size=cnn_model_cfg['patch_size'],
+            bilinear=True,
+            attention=True,
+        )
+        
+        self.cnn_branch.get_dimensions(
+            N_in = cnn_model_cfg['batch_size'],
+            C_in = cnn_model_cfg['in_channels'],
+            H_in = cnn_model_cfg['image_size'][0], 
+            W_in = cnn_model_cfg['image_size'][1]
+        )
+
+        num_output_trans = trans_model_cfg['num_output_trans']
+        print(f'num_output_trans: {num_output_trans}')
+
+        self.output_size = (trans_model_cfg['image_size'][0], trans_model_cfg['image_size'][1])
+
+        # entrance flow 
+        self.enFlow1 = nn.Sequential(
+            nn.Conv2d(3, 3, kernel_size=3, padding=1, groups=3),
+            nn.Conv2d(3, 16, kernel_size=1),
+            nn.BatchNorm2d(16),
+            nn.SiLU(True),
+        )
+        self.enFlow2 = nn.Sequential(
+            nn.Conv2d(16, 16, kernel_size=3, padding=1, groups=16),
+            nn.Conv2d(16, 3, kernel_size=1),
+            nn.BatchNorm2d(3),
+            nn.SiLU(True),
+        )
+
+        self.trans_branch_1 = create_transformerV4(trans_model_cfg)
+
+        self.decoder_trans = DecoderMultiClassDilationAndSCSEReduced(
+            in_chans=num_output_trans,
+            inter_chans=32,
+            out_chans=1,
+            dilation1=1,
+            dilation2=3,
+        )
+
+        self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
+            self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+        self.fuse_1_4 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+        self.fuse_1_8 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+        self.fuse_1_16 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+
+    def forward(self, images):
+        images = self.enFlow1(images)
+        images = self.enFlow2(images)
+
+        x_final_cnn = self.cnn_branch(images)
+
+        x_trans = self.trans_branch_1(images)
+
+        x_final_trans = self.decoder_trans(x_trans)
 
         self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch_1.x_1_2)
         self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch_1.x_1_4)

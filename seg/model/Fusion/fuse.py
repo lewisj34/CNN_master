@@ -417,12 +417,12 @@ class CCMFusionModule(nn.Module):
     
     def forward(self, x_cnn, x_trans):
         x = torch.cat([x_cnn, x_trans], dim=1)
-        x = self.down1(x); print(f'x.shape: {x.shape}')
-        x = self.down2(x); print(f'x.shape: {x.shape}')
-        x = self.up1(x); print(f'x.shape: {x.shape}')
-        x = self.CCM1(x); print(f'x.shape: {x.shape}')
-        x = self.up2(x); print(f'x.shape: {x.shape}')
-        x = self.CCM2(x); print(f'x.shape: {x.shape}')
+        x = self.down1(x)
+        x = self.down2(x)
+        x = self.up1(x)
+        x = self.CCM1(x)
+        x = self.up2(x)
+        x = self.CCM2(x)
         x = self.DWSep(x)
         return x
 

@@ -10,7 +10,7 @@ import yaml
 from pathlib import Path
 from seg.model.Fusion.CondensedFusion import BNRconv3x3
 from seg.model.alt_cnns.pranetSimple import RFB_modified
-from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSEFusion
+from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSEFusion, UpModDilatedDWSep, UpModDilated
 from seg.model.transformer.transformerV3 import create_transformerV3
 
 from seg.model.zed.zedNet import zedNet, zedNetDWSep, zedNetMod
@@ -347,7 +347,7 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
 
 from seg.model.transformer.transformerNoDecoder import create_transformerV4
-from seg.model.zed.parts import DoubleConvDWSep
+from seg.model.zed.parts import DoubleConvDWSep, UpDWSep
 
 class NewZedFusionAttentionTransDecoderDWSepCNN(nn.Module):
     def __init__(
@@ -817,16 +817,23 @@ class NewZedFusionAttentionTransDecoderDWSepCNNWithCCMFuse(nn.Module):
         self.with_fusion = with_fusion
         if self.with_fusion:
             self.fuse_1_2 = CCMFusionModule( # NOTE: 64 classes trans output manually input here 
-                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 4, stage = '1_2')
+            self.up_1_2 = UpModDilated(4, 1, True, scale_factor=2, dilation=4)
+
             self.fuse_1_4 = CCMFusionModule(
-                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 8, stage='1_4')
+            self.up_1_4_0 = UpModDilated(8, 4, True, scale_factor=2, dilation=2)
+            self.up_1_4_1 = UpModDilated(4, 1, True, scale_factor=2, dilation=3)
+
             self.fuse_1_8 = CCMFusionModule(
-                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 16, stage='1_8')
+            self.up_1_8_0 = UpModDilated(16, 8, True, scale_factor=2, dilation=1)
+            self.up_1_8_1 = UpModDilated(8, 1, True, scale_factor=4, dilation=2)
+
             self.fuse_1_16 = CCMFusionModule(
-                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
-            if self.patch_size == 32:
-                self.fuse_1_32 = CCMFusionModule(
-                    self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
+                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 32, stage='1_16')
+            self.up_1_16_0 = UpModDilated(32, 16, True, scale_factor=4, dilation=1)
+            self.up_1_16_1 = UpModDilated(16, 1, True, scale_factor=4, dilation=1)
 
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)
@@ -842,15 +849,19 @@ class NewZedFusionAttentionTransDecoderDWSepCNNWithCCMFuse(nn.Module):
         if self.with_fusion:
             # 1 / 2 - note (kind of wack given that you have to interploate from 1/4)
             self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch.x_1_2)
+            self.x_1_2 = self.up_1_2(self.x_1_2)
             self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch.x_1_4)
+            self.x_1_4 = self.up_1_4_0(self.x_1_4)
+            self.x_1_4 = self.up_1_4_1(self.x_1_4)
             self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch.x_1_8)
+            self.x_1_8 = self.up_1_8_0(self.x_1_8)
+            self.x_1_8 = self.up_1_8_1(self.x_1_8)
             self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch.x_1_16)
+            self.x_1_16 = self.up_1_16_0(self.x_1_16)
+            self.x_1_16 = self.up_1_16_1(self.x_1_16)
+
 
             if self.patch_size == 16:
                 tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
                 return mean
-            elif self.patch_size == 32:
-                x_1_32 = self.fuse_1_32(self.cnn_branch.x_1_32, self.trans_branch.x_1_32)
-                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
-                mean = torch.mean(torch.stack(tensor_list), dim=0)

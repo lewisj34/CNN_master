@@ -540,6 +540,30 @@ def main(
         # output = model(input)
         # print(f'output.shape: {output.shape}')
         # exit(1)
+    elif model_name == 'SingleTransformerZedFusion':
+        # kind of like a smaller transformer repeated twice (so two small transformers)
+        # where the input is from the CNN and reshaped not the actual images themselves
+        from seg.model.Fusion.NewFusionNetwork import SingleTransformerZedFusion
+        model = SingleTransformerZedFusion(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+        count_parameters(model)
+        input = torch.randn((1, 3, 512, 512), device='cuda')
+        output = model(input)
+        print(f'output.shape: {output.shape}')
+        exit(1)
+    elif model_name == 'NewZedFusionAttentionTransDecoderDWSepCNNWithCCMFuse':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionAttentionTransDecoderDWSepCNNWithCCMFuse
+        model = NewZedFusionAttentionTransDecoderDWSepCNNWithCCMFuse(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+        count_parameters(model)
+        input = torch.randn((1, 3, 512, 512), device='cuda')
+        output = model(input)
+        print(f'output.shape: {output.shape}')
+        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

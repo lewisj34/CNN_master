@@ -9,6 +9,7 @@ from seg.model.CNN.CNN_parts import Down, Up
 from seg.model.siddnet.parts import SuperficialModule
 
 from seg.model.zed.parts import DownDWSep, UpDWSep, UpDWSepRFB
+from seg.utils.check_parameters import count_parameters
 
 '''
 Okay so we want two fusion modules here. One where 
@@ -320,12 +321,166 @@ class MiniEncoderFuseDWSepRFB(nn.Module):
             mode='bilinear') 
         return seg_map
 
-if __name__ == '__main__':
-    fuse_1_2 = MiniEncoderFuse(256, 64, 64, 1, stage='1_2')
-    # fuse_1_4 = MiniEncoderFuse(256, 64, 64, 1, fraction=0.25)
-    # fuse_1_8 = MiniEncoderFuse(512, 128, 64, 1, fraction=0.125)
+class CCMSubBlock(nn.Module):
+    '''
+    This class defines the dilated convolution.
+    '''
+    def __init__(self, nIn, nOut, kSize, stride=1, d=1):
+        '''
+        :param nIn: number of input channels
+        :param nOut: number of output channels
+        :param kSize: kernel size
+        :param stride: optional stride rate for down-sampling
+        :param d: optional dilation rate
+        '''
+        super().__init__()
+        padding = int((kSize - 1) / 2) * d
 
-    from torchsummary import summary 
-    summary(fuse_1_2, [(256, 96, 128), (64, 96, 128)], batch_size=2, device='cpu')
-    # summary(fuse_1_4, [(256, 48, 64), (64, 48, 64)], batch_size=2, device='cpu')
-    # summary(fuse_1_8, [(512, 24, 32), (128, 24, 32)], batch_size=2, device='cpu')
+        combine_kernel = 2 * d - 1
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(nIn, nIn, kernel_size=(combine_kernel, 1), stride=stride, padding=(padding - 1, 0),
+                        groups=nIn, bias=False),
+            nn.BatchNorm2d(nIn),
+            nn.PReLU(nIn),
+            nn.Conv2d(nIn, nIn, kernel_size=(1, combine_kernel), stride=stride, padding=(0, padding - 1),
+                        groups=nIn, bias=False),
+            nn.BatchNorm2d(nIn),
+            nn.Conv2d(nIn, nIn, (kSize, kSize), stride=stride, padding=(padding, padding), groups=nIn, bias=False,
+                        dilation=d),
+            nn.Conv2d(nIn, nOut, kernel_size=1, stride=1, bias=False))
+
+    def forward(self, input):
+        '''
+        :param input: input feature map
+        :return: transformed feature map
+        '''
+        output = self.conv(input)
+        return output
+
+class dualCCM(nn.Module):
+    def __init__(
+        self,
+        nIn,
+        nOut,
+        kSize=3,
+        d=[2, 3],
+    ):
+        super().__init__()
+        print(f'CCM initialized.')
+        self.CCM1 = CCMSubBlock(nIn, nOut, kSize, stride=1, d=d[0])
+        self.CCM2 = CCMSubBlock(nIn, nOut, kSize, stride=1, d=d[1])
+    def forward(self, x):
+        x = self.CCM1(x)
+        x = self.CCM2(x)
+        x = F.relu6(x, inplace=True)
+        return x 
+
+from seg.model.general.DW_sep import SeparableConv2D
+class CCMFusionModule(nn.Module):
+    def __init__(
+        self,
+        in_channels_trans,
+        in_channels_cnn,
+        inter_channels,
+        out_channels=1,
+        stage=None, 
+    ):
+        super().__init__()
+
+        stages = ['1_2', '1_4', '1_8', '1_16', '1_32']
+        self.fuse_stage = stage
+        assert self.fuse_stage in stages
+
+        if self.fuse_stage == '1_2':
+            self.scale_factor = 2
+            dilations = [5, 4]
+        elif self.fuse_stage == '1_4':
+            self.scale_factor = 4
+            dilations = [4, 3]
+        elif self.fuse_stage == '1_8':
+            self.scale_factor = 8 
+            dilations = [3, 2]
+        elif self.fuse_stage == '1_16':
+            self.scale_factor = 16
+            dilations = [2, 2]
+        else:
+            raise ValueError(f'Valid stages for fusion: {stages}')
+
+        self.down1 = DownDWSep(in_channels_trans + in_channels_cnn, inter_channels)
+        self.down2 = DownDWSep(inter_channels, inter_channels)
+        self.up1 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.CCM1 = dualCCM(inter_channels, inter_channels, kSize=3, d=dilations)
+        self.up2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.CCM2 = dualCCM(inter_channels, inter_channels, kSize=3, d=dilations)
+        self.DWSep = SeparableConv2D(inter_channels, out_channels, kernel_size=1)
+    
+    def forward(self, x_cnn, x_trans):
+        x = torch.cat([x_cnn, x_trans], dim=1)
+        x = self.down1(x); print(f'x.shape: {x.shape}')
+        x = self.down2(x); print(f'x.shape: {x.shape}')
+        x = self.up1(x); print(f'x.shape: {x.shape}')
+        x = self.CCM1(x); print(f'x.shape: {x.shape}')
+        x = self.up2(x); print(f'x.shape: {x.shape}')
+        x = self.CCM2(x); print(f'x.shape: {x.shape}')
+        x = self.DWSep(x)
+        return x
+
+
+        
+
+if __name__ == '__main__':
+    fuse_1_2_reg = MiniEncoderFuse(256, 64, 64, 1, stage='1_2').cuda()
+    fuse_1_2_DW = MiniEncoderFuseDWSep(256, 64, 64, 1, stage='1_2').cuda()
+    count_parameters(fuse_1_2_DW)
+
+    input_size = (512, 512)
+    # 1 / 2 size input
+    print(f'\n\n1 / 2  Input')
+    input_cnn = torch.randn((2, 256, input_size[0] // 2, input_size[1] // 2), device='cuda')
+    input_trans = torch.randn((2, 64, input_size[0] // 2, input_size[1] // 2), device='cuda')
+    CCM_1_2_model = CCMFusionModule(input_trans.shape[1], input_cnn.shape[1], inter_channels=64, out_channels=1, stage='1_2').cuda()
+    output = CCM_1_2_model(input_cnn, input_trans)
+    print(f'output.shape: {output.shape}')
+    count_parameters(CCM_1_2_model)
+
+
+    # 1 / 4 size input
+    print(f'\n\n1 / 4  Input')
+    input_cnn = torch.randn((2, 256, input_size[0] // 4, input_size[1] // 4), device='cuda')
+    input_trans = torch.randn((2, 64, input_size[0] // 4, input_size[1] // 4), device='cuda')
+    CCM_1_2_model = CCMFusionModule(input_trans.shape[1], input_cnn.shape[1], inter_channels=64, out_channels=1, stage='1_4').cuda()
+    output = CCM_1_2_model(input_cnn, input_trans)
+    print(f'output.shape: {output.shape}')
+
+    # 1 / 8 size input
+    print(f'\n\n1 / 8  Input')
+    input_cnn = torch.randn((2, 256, input_size[0] // 8, input_size[1] // 8), device='cuda')
+    input_trans = torch.randn((2, 64, input_size[0] // 8, input_size[1] // 8), device='cuda')
+    CCM_1_2_model = CCMFusionModule(input_trans.shape[1], input_cnn.shape[1], inter_channels=64, out_channels=1, stage='1_8').cuda()
+    output = CCM_1_2_model(input_cnn, input_trans)
+    print(f'output.shape: {output.shape}')
+
+    # 1 / 16 size input
+    print(f'\n\n1 / 16  Input')
+    input_cnn = torch.randn((2, 256, input_size[0] // 16, input_size[1] // 16), device='cuda')
+    input_trans = torch.randn((2, 64, input_size[0] // 16, input_size[1] // 16), device='cuda')
+    CCM_1_2_model = CCMFusionModule(input_trans.shape[1], input_cnn.shape[1], inter_channels=64, out_channels=1, stage='1_16').cuda()
+    output = CCM_1_2_model(input_cnn, input_trans)
+    print(f'output.shape: {output.shape}')
+
+    # # 1 / 2 size input
+    # test_CCM_input = torch.randn((2, 256, 128, 128), device='cuda')
+    # CCM_sub = CCMSubBlock(256, 64, kSize=3, stride=1, d=1).cuda()
+    # output = CCM_sub(test_CCM_input)
+    # print(f'output of CCM using k = 3, d = 1: {output.shape}')
+
+    # test_CCM_input = torch.randn((2, 256, 64, 64), device='cuda')
+    # CCM_sub = CCMSubBlock(256, 64, kSize=4, stride=1, d=1).cuda()
+    # output = CCM_sub(test_CCM_input)
+    # print(f'output of CCM using k = 4, d = 1: {output.shape}')
+
+    # test_CCM_input = torch.randn((2, 256, 64, 64), device='cuda')
+    # CCM_sub = CCMSubBlock(256, 64, kSize=3, stride=1, d=2).cuda()
+    # output = CCM_sub(test_CCM_input)
+    # print(f'output of CCM using k = 3, d = 2: {output.shape}')

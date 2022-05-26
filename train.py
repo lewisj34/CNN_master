@@ -582,6 +582,34 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
+    elif model_name == 'ReverseAttentionCNNandlittleandBigTransformer':
+        sml_trans='vit_tiny_patch16_384'
+        big_trans='vit_small_patch16_384' # vit_small_patch32_384 - 45.4M
+        trans_cfg_1 = yaml.load(open(Path(__file__).parent / "transformer_presets.yml", "r"), 
+            Loader=yaml.FullLoader)
+        trans_cfg_2 = yaml.load(open(Path(__file__).parent / "transformer_presets.yml", "r"), 
+            Loader=yaml.FullLoader)
+        big_trans_model_cfg = trans_cfg_1['model'][big_trans]
+        sml_trans_model_cfg = trans_cfg_2['model'][sml_trans]
+        big_trans_model_cfg['backbone'] = big_trans 
+        sml_trans_model_cfg['backbone'] = sml_trans 
+        decoder_cfg = trans_cfg_1["decoder"]['linear']
+        from seg.model.Fusion.NewFusionNetwork import ReverseAttentionCNNandlittleandBigTransformer
+        torch.cuda.empty_cache()
+        model = ReverseAttentionCNNandlittleandBigTransformer(
+            cnn_model_cfg,
+            big_trans_model_cfg,
+            sml_trans_model_cfg,
+            decoder_cfg,
+            trans_model_cfg,
+            num_output_trans_big=64,
+            num_output_trans_sml=1,
+        ).cuda()
+        # input = torch.randn((batch_size, 3, image_size[0], image_size[1]), device='cuda')
+        # output1 = model(input)
+        # print(f'output1, output2, output3.shape: {output1.shape}')
+        # count_parameters(model)
+        # exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

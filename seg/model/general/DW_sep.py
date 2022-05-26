@@ -124,3 +124,15 @@ class SeparableConv2D(nn.Module):
         x = self.pointwise_conv(x)
 
         return x
+
+if __name__ == '__main__':
+    BNR_conv = nn.Sequential(
+        SeparableConv2D(8, 64, kernel_size=3, padding=0, dilation=1),
+        nn.BatchNorm2d(64),
+        nn.ReLU(True),
+    )
+
+    input = torch.randn((2, 8, 24, 24))
+    output = BNR_conv(input)
+    print(f'[input]: \t {input.shape}')
+    print(f'[output]: \t {output.shape}')

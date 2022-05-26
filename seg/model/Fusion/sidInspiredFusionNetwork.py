@@ -24,7 +24,13 @@ basic_0 = 24
 class MultiLevelInputFusionNetwork(nn.Module):
     def __init__(
         self,
-        
+        cnn_model_cfg,
+        big_trans_model_cfg,
+        sml_trans_model_cfg,
+        decoder_cfg,
+        trans_model_cfg,
+        num_output_trans_big=64,
+        num_output_trans_sml=1,
     ):
         super(MultiLevelInputFusionNetwork, self).__init__()
         self.init_block = nn.Sequential(
@@ -43,7 +49,6 @@ class MultiLevelInputFusionNetwork(nn.Module):
         input = self.init_block(input);                                         print(f'[input]: \t {input.shape}')
         output0 = self.level1(input);                                           print(f'[output0]:\t {output0.shape}')
         inp1 = self.sample1(input);                                             print(f'[inp1]:\t\t {inp1.shape}')
-        inp2 = self.sample2(input);                                             print(f'[inp2]:\t\t {inp2.shape}')
         output0_cat = self.BR_1(torch.cat([output0, inp1], dim=1));             print(f'[output0_cat]:\t {output0_cat.shape}')
         return output0_cat
 

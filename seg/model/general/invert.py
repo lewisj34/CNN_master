@@ -57,7 +57,7 @@ class NegativeInvert(nn.Module):
         x = self.PWconv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
-        x = x + inv   
+        x = x * inv   
         return x 
 
 if __name__ == '__main__':

@@ -619,26 +619,26 @@ def main(
             trans_model_cfg,
             init_block_convs=24,    # can be made into list w below
             sec_block_convs=48,     # can be made into list w above 
-            option=4,
+            option=3,
         ).cuda()
         count_parameters(model)
         input = torch.randn((batch_size, 3, image_size[0], image_size[1]), device='cuda') 
         output = model(input)
         exit(1)
-    elif model_name == 'MultiLevelInputFusionNetworkDualTransformer':
+    # elif model_name == 'MultiLevelInputFusionNetworkDualTransformer':
         
 
-        from seg.model.Fusion.sidInspiredFusionNetwork import MultiLevelInputFusionNetworkDualTransformer
-        model = MultiLevelInputFusionNetworkDualTransformer(
-            cnn_model_cfg,
-            big_trans_model_cfg,
-            sml_trans_model_cfg,
-            decoder_cfg,
-            trans_model_cfg,
-            num_output_trans_big=64,
-            num_output_trans_sml=1,
-            basic_0=24,
-        ).cuda()
+    #     from seg.model.Fusion.sidInspiredFusionNetwork import MultiLevelInputFusionNetworkDualTransformer
+    #     model = MultiLevelInputFusionNetworkDualTransformer(
+    #         cnn_model_cfg,
+    #         big_trans_model_cfg,
+    #         sml_trans_model_cfg,
+    #         decoder_cfg,
+    #         trans_model_cfg,
+    #         num_output_trans_big=64,
+    #         num_output_trans_sml=1,
+    #         basic_0=24,
+    #     ).cuda()
 
     else:
         raise ValueError(f'Invalid model_name: {model_name}')

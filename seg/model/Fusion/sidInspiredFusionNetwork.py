@@ -203,7 +203,8 @@ class MultiLevelInputFusionNetworkSingleTransformer(nn.Module):
         
 
         if self.option == 1:
-            output = output1_cat;                                               print(f'[output]: \t {output.shape}')
+            output = F.upsample(output1_cat, scale_factor=2, 
+            align_corners=False, mode='bilinear');                              print(f'[output]: \t {output.shape}')
         elif self.option == 2:
             output = self.DWSepconv1(output1_cat);                              print(f'[output]: \t {output.shape}')
         elif self.option == 3:

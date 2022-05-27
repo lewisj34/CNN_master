@@ -213,9 +213,11 @@ class MultiLevelInputFusionNetworkSingleTransformer(nn.Module):
             output = self.upsample1(output1_cat);                               
             output = self.DWSepconv1(output);                                   print(f'[output]: \t {output.shape}')
 
-        x_final_cnn = self.cnn_branch(output);                                  print(f'[x_final_cnn]:\t {x_final_cnn.shape}')
+        x_final_cnn = self.cnn_branch(
+            F.upsample_bilinear(output, scale_factor=2));                       print(f'[x_final_cnn]:\t {x_final_cnn.shape}')
         x_final_trans = self.trans(output);                                     print(f'[x_final_trans]:\t {x_final_trans.shape}')
-        x_final_trans = self.decoder_trans(x_final_trans);                      print(f'[x_final_trans]:\t {x_final_trans.shape}')
+        x_final_trans = self.decoder_trans(
+            F.upsample_bilinear(x_final_trans, scale_factor=2));                print(f'[x_final_trans]:\t {x_final_trans.shape}')
 
         self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans.x_1_2);    print(f'[x_1_2]:\t\t {self.x_1_2.shape}')
         self.x_1_2 = self.up_1_2(self.x_1_2);                                   print(f'[x_1_2]:\t\t {self.x_1_2.shape}')

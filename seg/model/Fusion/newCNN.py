@@ -77,7 +77,7 @@ class xCNN(nn.Module):
         self.b2 = BR(sec_block_convs * 2 + init_block_convs)
 
         self.BNS_RFBs = nn.ModuleList()
-        planes=[sec_block_convs * 2 + init_block_convs + rfb_out_chans, 256 // 2 , 512 // 2, 1024 // 2]
+        planes=[sec_block_convs * 2 + init_block_convs + rfb_out_chans, 256, 512, 1024]
         for i in range(0, len(planes) - 1):
             self.BNS_RFBs.append(
                 nn.Sequential(
@@ -92,7 +92,7 @@ class xCNN(nn.Module):
         
         # decoder branch
 
-        out_chans = [512 // 2, 256 // 2, 128 // 2, 64 // 2, 32 // 2]
+        out_chans = [512, 256, 128, 64, 32]
         self.up1 = UpDWSep(planes[3] + planes[2], out_chans[0], bilinear=True)
         self.up2 = UpDWSep(out_chans[0] + planes[1], out_chans[1], bilinear=True)
         self.att1 = SCSEModule(in_channels=out_chans[1], reduction=16)

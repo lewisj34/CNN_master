@@ -639,7 +639,18 @@ def main(
     #         num_output_trans_sml=1,
     #         basic_0=24,
     #     ).cuda()
-
+    elif model_name == 'xCNN':
+        from seg.model.Fusion.newCNN import xCNN
+        model = xCNN(
+            cnn_model_cfg,
+            init_block_convs=24, 
+            sec_block_convs=48,
+            p=5,
+        ).cuda()
+        # input = torch.randn((batch_size, 3, image_size[0], image_size[1]), device='cuda')
+        # output = model(input)
+        # count_parameters(model)
+        # exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

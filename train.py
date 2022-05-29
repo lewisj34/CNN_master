@@ -295,6 +295,8 @@ def main(
             n_classes=1, 
             patch_size=16
         ).cuda()
+        count_parameters(model)
+        exit(1)
     elif model_name == "UNet_backboned":
         assert image_size[0] == image_size[1], f'dk why this is in'
         model = CNN_BRANCH_WITH_BACKBONE(
@@ -645,6 +647,19 @@ def main(
             cnn_model_cfg,
             init_block_convs=24, 
             sec_block_convs=48,
+            p=5,
+        ).cuda()
+        # input = torch.randn((batch_size, 3, image_size[0], image_size[1]), device='cuda')
+        # output = model(input)
+        count_parameters(model)
+        exit(1)
+    elif model_name == 'xCNN_v2':
+        torch.cuda.empty_cache()
+        from seg.model.Fusion.newCNN import xCNN_v2
+        model = xCNN_v2(
+            cnn_model_cfg,
+            init_block_convs=64, 
+            sec_block_convs=128,
             p=5,
         ).cuda()
         # input = torch.randn((batch_size, 3, image_size[0], image_size[1]), device='cuda')

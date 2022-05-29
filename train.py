@@ -666,7 +666,7 @@ def main(
         # output = model(input)
         count_parameters(model)
         exit(1)
-    elif model_name == 'xFusionUsingxCNN_v2':
+    elif model_name == 'xFusion':
         from seg.model.Fusion.NewFusionNetwork import xFusion
         cnn_model_cfg['init_block_convs'] = 32
         cnn_model_cfg['sec_block_convs'] = 128
@@ -674,6 +674,8 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         )
+        count_parameters(model)
+        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

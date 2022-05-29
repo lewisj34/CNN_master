@@ -13,7 +13,7 @@ from seg.model.Fusion.CondensedFusion import BNRconv3x3
 from seg.model.Fusion.newCNN import xCNN_v2
 from seg.model.alt_cnns.pranetSimple import RFB_modified
 from seg.model.general.DW_sep import SeparableConv2D
-from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSE, DecoderMultiClassDilationAndSCSEFusion, DecoderMultiClassDilationAndSCSEFusionJustOne, DecoderMultiClassDilationAndSCSEReduced, UpModDilatedDWSep, UpModDilated
+from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSE, DecoderMultiClassDilationAndSCSEFusion, DecoderMultiClassDilationAndSCSEFusionJustOne, DecoderMultiClassDilationAndSCSEReduced, DecoderMultiClassDilationWithSingleSeparableSqueezeandExitationBlock, UpModDilatedDWSep, UpModDilated
 from seg.model.transformer.transformerV3 import create_transformerV3
 
 from seg.model.zed.zedNet import zedNet, zedNetDWSep, zedNetMod
@@ -1245,7 +1245,7 @@ train.py, but im too tired to try and figure out how to work that and were \
 running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         # need to do something or pull information from the trans_model_cfg and
         #  pull that info. but yeah. wahtever rn lol 
-        self.trans_branch = create_transformerV2(trans_model_cfg, 
+        self.trans_branch = create_transformerV4(trans_model_cfg, 
             decoder='linear')
         
         num_output_trans = trans_model_cfg['num_output_trans']
@@ -1266,10 +1266,19 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
                 self.fuse_1_32 = MiniEncoderFuseDWSep(
                     self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
 
+        self.decoder_trans = DecoderMultiClassDilationWithSingleSeparableSqueezeandExitationBlock(
+            in_chans=num_output_trans,
+            inter_chans=32,
+            out_chans=1,
+            dilation1=1,
+            dilation2=3,
+        )
+
+
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)
         x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
-
+        x_final_trans = self.decoder_trans(x_final_trans)
         '''
         self.CNN_BRANCH and self.TRANSFORMER_BRANCH should have same members:
                 { output_1_4, output_1_2 }

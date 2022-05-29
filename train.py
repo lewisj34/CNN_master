@@ -664,8 +664,8 @@ def main(
         ).cuda()
         # input = torch.randn((batch_size, 3, image_size[0], image_size[1]), device='cuda')
         # output = model(input)
-        # count_parameters(model)
-        # exit(1)
+        count_parameters(model)
+        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

@@ -667,7 +667,7 @@ def main(
         count_parameters(model)
         exit(1)
     elif model_name == 'xFusionUsingxCNN_v2':
-        from seg.model.Fusion.newCNN import xFusion
+        from seg.model.Fusion.NewFusionNetwork import xFusion
         cnn_model_cfg['init_block_convs'] = 32
         cnn_model_cfg['sec_block_convs'] = 128
         model = xFusion(

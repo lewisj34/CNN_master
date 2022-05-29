@@ -139,7 +139,7 @@ class xCNN_v2(nn.Module):
     def __init__(
         self,
         cnn_model_cfg,
-        init_block_convs=64,    # can be made into list w below
+        init_block_convs=32,    # can be made into list w below
         sec_block_convs=128,     # can be made into list w above 
         p=5,
     ):
@@ -210,13 +210,11 @@ class xCNN_v2(nn.Module):
         
         # decoder branch
 
-        out_chans = [512, 256, 128, 64, 32]
+        out_chans = [512, 64, 128, 64, 32]
         self.up1 = UpDWSep(planes[3] + planes[2], out_chans[0], bilinear=True)
         self.up2 = UpDWSep(out_chans[0] + planes[1], out_chans[1], bilinear=True)
-        # self.att1 = SCSEModule(in_channels=out_chans[1], reduction=16)
         self.up3 = UpDWSep(out_chans[1] + planes[0], out_chans[2], bilinear=True)
         self.up4 = UpDWSep(out_chans[2] + init_block_convs, out_chans[3], bilinear=True)
-        # self.att3 = NouveauAttention(out_chans[3], reduction=2, AvgPoolKernelSize=31, AvgPoolPadding=15)
         self.up5 = UpDWSep(out_chans[3], out_chans[3], bilinear=True)
         self.final_conv = SeparableConv2D(out_chans[3], out_channels=1, kernel_size=1)
 

@@ -9,6 +9,7 @@ import socket
 from pathlib import Path
 import seg.utils.torch as ptu
 from seg.utils import distributed
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from seg.model.PraNet.lib.PraNet_Res2Net import PraNet
 from seg.model.SwinUNet.vision_transformer import SwinUnet

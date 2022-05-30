@@ -169,9 +169,11 @@ class xCNN_v2(nn.Module):
         )
 
         rfb_out_chans=64
-        self.init_rfb_block = nn.Sequential(
+        self.init_rfb_block1 = nn.Sequential(
             RFB_separable(in_channel=in_channels, out_channel=32),
             nn.MaxPool2d(2),
+        )
+        self.init_rfb_block2 = nn.Sequential(
             RFB_separable(in_channel=32, out_channel=rfb_out_chans),
             nn.MaxPool2d(2)
         )
@@ -197,7 +199,7 @@ class xCNN_v2(nn.Module):
         self.b2 = BR(sec_block_convs * 2 + init_block_convs)
 
         self.BNS_RFBs = nn.ModuleList()
-        planes=[sec_block_convs * 2 + init_block_convs + rfb_out_chans, 256, 512, 1024]
+        planes=[sec_block_convs * 2 + init_block_convs + rfb_out_chans, 256, 256, 512]
         for i in range(0, len(planes) - 1):
             self.BNS_RFBs.append(
                 nn.Sequential(
@@ -212,7 +214,7 @@ class xCNN_v2(nn.Module):
         
         # decoder branch
 
-        out_chans = [512, 64, 128, 64, 32]
+        out_chans = [256, 32, 64, 32, 16]
         self.up1 = UpDWSep(planes[3] + planes[2], out_chans[0], bilinear=True)
         self.up2 = UpDWSep(out_chans[0] + planes[1], out_chans[1], bilinear=True)
         self.up3 = UpDWSep(out_chans[1] + planes[0], out_chans[2], bilinear=True)
@@ -229,12 +231,12 @@ class xCNN_v2(nn.Module):
             print(f'self.x_1_4.shape: {self.x_1_4.shape}')
             print(f'self.x_1_8.shape: {self.x_1_8.shape}')
             print(f'self.x_1_16.shape: {self.x_1_16.shape}')
-        del dummy_tensor
 
     def forward(self, input):
         img=input
         input = self.init_block(input);                                         # print(f'[input]: \t {input.shape}')
-        rfb_input = self.init_rfb_block(img);                                   # print(f'[rfb_input]: \t {rfb_input.shape}')
+        self.x_1_2 = self.init_rfb_block1(img);                                 # print(f'[rfb_input]: \t {rfb_input1.shape}')
+        rfb_input2 = self.init_rfb_block2(self.x_1_2);                          # print(f'[rfb_input]: \t {rfb_input.shape}')
         output0 = self.level1(input);                                           # print(f'[output0]:\t {output0.shape}')
         inp1 = self.sample1(input);                                             # print(f'[inp1]:\t\t {inp1.shape}')
         inp2 = self.sample2(input);                                             # print(f'[inp2]:\t\t {inp2.shape}')
@@ -247,21 +249,17 @@ class xCNN_v2(nn.Module):
             else:
                 output1 = layer(output1) #,  Ci =48, Co=48
         output1_cat = self.b2(torch.cat([output1, output1_0, inp2], 1));        # print(f'[output1_cat]:\t {output1_cat.shape}')
-        output128x128 = torch.cat([output1_cat, rfb_input], 1);                 # print(f'[output1_cat]:\t {output1_cat.shape}')
-        self.x_1_2 = output128x128
+        self.x_1_4 = torch.cat([output1_cat, rfb_input2], 1);                 # print(f'[output1_cat]:\t {output1_cat.shape}')
 
         # run through self.BNS_RFBs
-        output64x64 = self.BNS_RFBs[0](output128x128);                          # print(f'[output64x64]:\t {output64x64.shape}')                         
-        output32x32 = self.BNS_RFBs[1](output64x64);                            # print(f'[output32x32]:\t {output32x32.shape}')  
-        output16x16 = self.BNS_RFBs[2](output32x32);                            # print(f'[output16x16]:\t {output16x16.shape}')  
+        self.x_1_8 = self.BNS_RFBs[0](self.x_1_4 );                          # print(f'[output64x64]:\t {output64x64.shape}')                         
+        self.x_1_16 = self.BNS_RFBs[1](self.x_1_8);                            # print(f'[output32x32]:\t {output32x32.shape}')  
+        output16x16 = self.BNS_RFBs[2](self.x_1_16);                            # print(f'[output16x16]:\t {output16x16.shape}')  
 
-        self.x_1_4 = output64x64
-        self.x_1_8 = output32x32
 
-        self.x_1_16 = output16x16
-        output = self.up1(output16x16, output32x32);                            # print(f'[output]:\t {output.shape}')
-        output = self.up2(output, output64x64);                                 # print(f'[output]:\t {output.shape}')
-        output = self.up3(output, output128x128);                               # print(f'[output]:\t {output.shape}')
+        output = self.up1(output16x16, self.x_1_16);                            # print(f'[output]:\t {output.shape}')
+        output = self.up2(output, self.x_1_8);                                 # print(f'[output]:\t {output.shape}')
+        output = self.up3(output, self.x_1_4);                               # print(f'[output]:\t {output.shape}')
         output = self.up4(output, inp1);                                        # print(f'[output]:\t {output.shape}')
         output = self.up5(output);                                              # print(f'[output]:\t {output.shape}')
         seg_map = self.final_conv(output);                                      # print(f'[seg_map]:\t {seg_map.shape}')

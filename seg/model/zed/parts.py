@@ -300,6 +300,104 @@ class OutConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
+class CCMSubBlock(nn.Module):
+    '''
+    This class defines the dilated convolution.
+    '''
+    def __init__(self, nIn, nOut, kSize, stride=1, d=1):
+        '''
+        :param nIn: number of input channels
+        :param nOut: number of output channels
+        :param kSize: kernel size
+        :param stride: optional stride rate for down-sampling
+        :param d: optional dilation rate
+        '''
+        super().__init__()
+        padding = int((kSize - 1) / 2) * d
+
+        combine_kernel = 2 * d - 1
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(nIn, nIn, kernel_size=(combine_kernel, 1), stride=stride, padding=(padding - 1, 0),
+                        groups=nIn, bias=False),
+            nn.BatchNorm2d(nIn),
+            nn.PReLU(nIn),
+            nn.Conv2d(nIn, nIn, kernel_size=(1, combine_kernel), stride=stride, padding=(0, padding - 1),
+                        groups=nIn, bias=False),
+            nn.BatchNorm2d(nIn),
+            nn.Conv2d(nIn, nIn, (kSize, kSize), stride=stride, padding=(padding, padding), groups=nIn, bias=False,
+                        dilation=d),
+            nn.Conv2d(nIn, nOut, kernel_size=1, stride=1, bias=False))
+
+    def forward(self, input):
+        '''
+        :param input: input feature map
+        :return: transformed feature map
+        '''
+        output = self.conv(input)
+        return output
+
+class dualCCM(nn.Module):
+    def __init__(
+        self,
+        nIn,
+        nOut,
+        kSize=3,
+        d=[2, 3],
+    ):
+        super().__init__()
+        print(f'CCM initialized.')
+        self.CCM1 = CCMSubBlock(nIn, nOut, kSize, stride=1, d=d[0])
+        self.CCM2 = CCMSubBlock(nOut, nOut, kSize, stride=1, d=d[1])
+    def forward(self, x):
+        x = self.CCM1(x)
+        x = self.CCM2(x)
+        x = F.relu6(x, inplace=True)
+        return x 
+
+class DownDWSepCCM(nn.Module):
+    """Downscaling with maxpool then double conv"""
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.maxpool_conv = nn.Sequential(
+            nn.MaxPool2d(2),
+            DoubleConvDWSep(in_channels, out_channels),
+            dualCCM(out_channels, out_channels),
+        )
+
+    def forward(self, x):
+        return self.maxpool_conv(x)
+
+class UpDWSepCCM(nn.Module):
+    """Upscaling then double conv"""
+
+    def __init__(self, in_channels, out_channels, bilinear=True):
+        super().__init__()
+
+        # if bilinear, use the normal convolutions to reduce the number of channels
+        if bilinear:
+            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.conv = DoubleConvDWSep(in_channels, out_channels, in_channels // 2)
+            self.CCMconv = dualCCM(out_channels, out_channels)
+        else:
+            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
+            self.conv = DoubleConvDWSep(in_channels, out_channels)
+
+    def forward(self, x1, x2=None):
+        x1 = self.up(x1)
+        # input is CHW
+        if x2 is not None:
+            diffY = x2.size()[2] - x1.size()[2]
+            diffX = x2.size()[3] - x1.size()[3]
+
+            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                            diffY // 2, diffY - diffY // 2])
+            x = torch.cat([x2, x1], dim=1)
+        else:
+            x = x1
+        return self.conv(self.CCMconv(x))
+
 if __name__ == '__main__':
     model = Up(
         in_channels = 64, 

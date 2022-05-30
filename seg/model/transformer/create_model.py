@@ -8,7 +8,7 @@ from timm.models.vision_transformer import default_cfgs
 
 from .ViT import VisionTransformer
 from .decoder import DecoderLinear, MaskTransformer
-from .decoder_new import DecoderPlus
+from .decoder_new import DecoderMultiClass, DecoderPlus
 from .utils import checkpoint_filter_fn, padding, unpadding
 
 def create_vit(model_cfg):
@@ -78,7 +78,7 @@ class Transformer(nn.Module):
         # 256x256
         self.use_decoderPlus = True
         print(f'Using decoderPlus: ', self.use_decoderPlus)
-        self.decoderPlus = DecoderPlus(
+        self.decoderPlus = DecoderMultiClass(
             input_size=(16,16), 
             output_size=(256,256),
             inter_chans=32,

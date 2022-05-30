@@ -119,7 +119,7 @@ def main(
 
     world_batch_size = batch_size
     batch_size = world_batch_size // ptu.world_size
-    exit(1)
+    # exit(1)
 
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'
@@ -322,8 +322,8 @@ def main(
         ).cuda()
     elif model_name == 'just_trans':
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
-        count_parameters(model)
-        exit(1)
+        # count_parameters(model)
+        # exit(1)
     elif model_name == 'transV2':
         model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     elif model_name == 'pranet':

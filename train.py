@@ -678,12 +678,21 @@ def main(
         exit(1)
     elif model_name == 'NewZedFusionNetworkDWSepWithCCMinDWModule':
         from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkDWSepWithCCMinDWModule
+        """
+        BEST results so far 
+        """
         model = NewZedFusionNetworkDWSepWithCCMinDWModule(
             cnn_model_cfg,
             trans_model_cfg
         ).cuda()
         # count_parameters(model)
         # exit(1)
+    elif model_name == 'NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModule':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModule
+        model = NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModule(
+            cnn_model_cfg,
+            trans_model_cfg
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

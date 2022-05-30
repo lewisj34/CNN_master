@@ -383,6 +383,36 @@ class UpDWSepCCM(nn.Module):
             x = x1
         return self.conv(self.CCMconv(x))
 
+class UpDWSepCCMReverse(nn.Module):
+    """
+    Same as other one but we do the CCM last not first, idk why the other one worked... 
+    """
+    def __init__(self, in_channels, out_channels, bilinear=True):
+        super().__init__()
+
+        # if bilinear, use the normal convolutions to reduce the number of channels
+        if bilinear:
+            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.conv = DoubleConvDWSep(in_channels, out_channels, in_channels // 2)
+            self.CCMconv = dualCCM(out_channels, out_channels)
+        else:
+            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
+            self.conv = DoubleConvDWSep(in_channels, out_channels)
+
+    def forward(self, x1, x2=None):
+        x1 = self.up(x1)
+        # input is CHW
+        if x2 is not None:
+            diffY = x2.size()[2] - x1.size()[2]
+            diffX = x2.size()[3] - x1.size()[3]
+
+            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                            diffY // 2, diffY - diffY // 2])
+            x = torch.cat([x2, x1], dim=1)
+        else:
+            x = x1
+        return self.CCMconv(self.conv((x)))
+
 if __name__ == '__main__':
     model = Up(
         in_channels = 64, 

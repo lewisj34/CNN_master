@@ -118,6 +118,10 @@ def main(
     ptu.set_gpu_mode(True)
     distributed.init_process()
 
+    if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' \
+        or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
+        dataset_file_location == '/home/lewisj34_local/Dev/Datasets/master_polyp'
+
     world_batch_size = batch_size
     batch_size = world_batch_size // ptu.world_size
     # exit(1)
@@ -770,6 +774,7 @@ def main(
         start_epoch = 1
 
     if ptu.distributed:
+        print(f'Using DDP. device_ids: {ptu.device}')
         model = DDP(model, device_ids=[ptu.device], find_unused_parameters=True)
 
     train_loader = get_dataset(

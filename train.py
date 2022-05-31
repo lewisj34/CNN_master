@@ -696,6 +696,12 @@ def main(
             cnn_model_cfg,
             trans_model_cfg
         ).cuda()
+    elif model_name == 'NewZedFusionNetworkDWSepWithCCMinDWModuleAndSmallRFB':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkDWSepWithCCMinDWModuleAndSmallRFB
+        model = NewZedFusionNetworkDWSepWithCCMinDWModuleAndSmallRFB(
+            cnn_model_cfg,
+            trans_model_cfg
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

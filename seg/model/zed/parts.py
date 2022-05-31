@@ -74,6 +74,34 @@ class DoubleConvDWSep(nn.Module):
     def forward(self, x):
         return self.double_conv(x)
 
+from seg.model.general.RFB_sep import RFB_separable
+class DoubleConvDWSepWithSmallRFB(nn.Module):
+    """(convolution => [BN] => SiLU) * 2"""
+
+    def __init__(self, in_channels, out_channels, mid_channels=None):
+        super().__init__()
+        if not mid_channels:
+            mid_channels = out_channels
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, groups=in_channels),
+            nn.Conv2d(in_channels, mid_channels - 8, kernel_size=1),
+            nn.BatchNorm2d(mid_channels - 8),
+            nn.SiLU(inplace=True),
+        )
+        self.rfb1 = RFB_separable(in_channels, 8)
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(mid_channels, mid_channels, kernel_size=3, padding=1, groups=mid_channels),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=1),
+            nn.BatchNorm2d(out_channels),
+            nn.SiLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = torch.cat([self.conv1(x), self.rfb1(x)], dim=1)
+        x = self.conv2(x)
+        return x
+
 from seg.model.alt_cnns.pranetSimple import RFB_modified
 
 class DoubleConvDWSepRFB(nn.Module):

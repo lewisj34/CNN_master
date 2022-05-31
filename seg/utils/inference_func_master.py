@@ -131,6 +131,18 @@ def inference_master(
                 inferencer=inferencer,
                 loss_fn=loss_fn
             )
+        print('\n')
+        print(f'Param \t\t{test_cls[4]} \t\t{test_cls[1]} \t{test_cls[2]} \t{test_cls[0]} \t{test_cls[3]} \t\tAvg(dice, IoU)')
+        print("avg(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f})".format(
+            test_results[4, 2], test_results[4, 1], 
+            test_results[1, 2], test_results[1, 1], 
+            test_results[2, 2], test_results[2, 1], 
+            test_results[0, 2], test_results[0, 1], 
+            test_results[3, 2], test_results[3, 1], 
+            test_results[:,2].mean(), test_results[:,1].mean()
+            )
+        )
+        print('\n')
         return test_results # 5 x 3 tensor
 
 if __name__ == '__main__':

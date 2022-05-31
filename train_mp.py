@@ -726,11 +726,14 @@ def main(
         useParallel=True
         if useParallel:
             if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca':
-                model = torch.nn.DataParallel(model, device_ids=[0])
+                # model = torch.nn.DataParallel(model, device_ids=[0])
+                print(f'device_ids: {ptu.device}')
+                model = DDP(model, find_unused_parameters=True)
+                # exit(1)
             else:
                 model = torch.nn.DataParallel(model)
-            # model = model.cuda()
-            model.to(ptu.device)
+            model = model.cuda()
+            # model.to(ptu.device)
             print(f'Creating parallel training process. WARNING: This overwrites the model name and changes the name.')
             # print('Not inputting parallel training process right now. Too many problems with CE-YC-dlearn2.')
             # exit(1)
@@ -773,9 +776,9 @@ def main(
         grad_norm = 2.0
         start_epoch = 1
 
-    if ptu.distributed:
-        print(f'Using DDP. device_ids: {ptu.device}')
-        model = DDP(model, device_ids=[ptu.device], find_unused_parameters=True)
+    # if ptu.distributed:
+    #     print(f'Using DDP. device_ids: {ptu.device}')
+    #     model = DDP(model, device_ids=[ptu.device], find_unused_parameters=True)
 
     train_loader = get_dataset(
         dataset, 

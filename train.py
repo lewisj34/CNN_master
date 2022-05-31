@@ -110,8 +110,7 @@ def main(
     dataset_file_location,
     num_output_trans,
 ):
-    if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' \
-        or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
+    if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
         dataset_file_location == '/home/lewisj34_local/Dev/Datasets/master_polyp'
 
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
@@ -315,8 +314,8 @@ def main(
         ).cuda()
     elif model_name == 'just_trans':
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
-        count_parameters(model)
-        exit(1)
+        # count_parameters(model)
+        # exit(1)
     elif model_name == 'transV2':
         model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     elif model_name == 'pranet':

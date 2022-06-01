@@ -142,8 +142,8 @@ def inference_master(
             test_results[:,2].mean(), test_results[:,1].mean()
             )
         )
-        logging.info(f'Param \t\t{test_cls[4]} \t\t{test_cls[1]} \t{test_cls[2]} \t{test_cls[0]} \t{test_cls[3]} \t\tAvg(dice, IoU)')
-        logging.info("avg(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f})".format(
+        logging.info(f'\nParam \t\t{test_cls[4]} \t\t{test_cls[1]} \t{test_cls[2]} \t{test_cls[0]} \t{test_cls[3]} \t\tAvg(dice, IoU)')
+        logging.info("avg(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f})\n".format(
             test_results[4, 2], test_results[4, 1], 
             test_results[1, 2], test_results[1, 1], 
             test_results[2, 2], test_results[2, 1], 

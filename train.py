@@ -111,7 +111,8 @@ def main(
     num_output_trans,
 ):
     if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
-        dataset_file_location == '/home/lewisj34_local/Dev/Datasets/master_polyp'
+        dataset_file_location = '/home/lewisj34_local/Dev/Datasets/master_polyp'
+        print(f'Manually adjusting dataset_file_location to: {dataset_file_location}')
 
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'
@@ -314,8 +315,8 @@ def main(
         ).cuda()
     elif model_name == 'just_trans':
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
-        count_parameters(model)
-        exit(1)
+        # count_parameters(model)
+        # exit(1)
     elif model_name == 'transV2':
         model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     elif model_name == 'pranet':
@@ -731,7 +732,7 @@ def main(
         useParallel=True
         if useParallel:
             if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca':
-                model = torch.nn.DataParallel(model, device_ids=[0])
+                model = torch.nn.DataParallel(model)
             else:
                 model = torch.nn.DataParallel(model)
             model = model.cuda()

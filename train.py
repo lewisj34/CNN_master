@@ -314,8 +314,8 @@ def main(
         ).cuda()
     elif model_name == 'just_trans':
         model = create_transformer(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
-        # count_parameters(model)
-        # exit(1)
+        count_parameters(model)
+        exit(1)
     elif model_name == 'transV2':
         model = create_transformerV2(model_cfg = trans_model_cfg, decoder = 'linear').cuda()
     elif model_name == 'pranet':
@@ -701,6 +701,18 @@ def main(
         model = NewZedFusionNetworkDWSepWithCCMinDWModuleAndSmallRFB(
             cnn_model_cfg,
             trans_model_cfg
+        ).cuda()
+    elif model_name == 'NewZedFusionNetworkDWSepWithCCMmoreCCMmoddedfromBest':
+        from seg.model.Fusion.NewFusionNetwork import NewZedFusionNetworkDWSepWithCCMmoreCCMmoddedfromBest
+        model = NewZedFusionNetworkDWSepWithCCMmoreCCMmoddedfromBest(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+    elif model_name == 'NewZedFusionNetworkDWSepWithWeights':
+        from seg.model.Fusion.tNewFusionNetwork import NewZedFusionNetworkDWSepWithWeights
+        model = NewZedFusionNetworkDWSepWithWeights(
+            cnn_model_cfg,
+            trans_model_cfg,
         ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')

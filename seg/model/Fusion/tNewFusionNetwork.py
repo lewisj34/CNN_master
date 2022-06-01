@@ -15,116 +15,148 @@ from seg.model.Fusion.fuse import SimpleFusion
 from seg.utils.check_parameters import count_parameters
 from .fuse import CCMFusionModule, MiniEncoderFuse, MiniEncoderFuseDWSep, MiniEncoderFuseDWSepRFB
 
-class WeightedAvg(nn.Module):
+class PatchAggregation(nn.Module):
     def __init__(
         self,
-        num_tensors,
-    ):
-        super().__init__()
-        # using einsum
-        self.w = nn.Parameter(torch.rand(num_tensors))
-
-        # using linear 
-        # self.wAvgLayer = nn.Linear(num_tensors, 1)     
-
-    def forward(self, tensor_list: list) -> torch.Tensor:
-        # using the linear layer version 
-        # print(f'self.w: {self.wAvgLayer.weight}')
-        # res = self.wAvgLayer(torch.stack(tensor_list, dim=-1))
-        # return res
-
-        # using the einsum verison 
-        print(f'w: {self.w}')
-        res = torch.einsum('ik,kj->ij', torch.stack(tensor_list), self.w)
-        return res
-
-class Crazy(nn.Module):
-    def __init__(
-        self,
-        image_size=(512, 512),
+        image_size = (512, 512),
         PS=16,
-        num_tensors=5, # number of tensors to be considered
+        num_tensors=5,
+        divide_by_sum=True,
     ):
-        super().__init__()
-        assert image_size[0] % PS == 0 and image_size[1] % PS == 0, \
-            f'H, W must be divisible by PS. Given: {image_size[0], image_size[1], PS}'
-        
+        super(PatchAggregation, self).__init__()
+        self.image_size = image_size
+        self.PS = PS
         self.num_tensors = num_tensors
+        self.divide_by_sum = divide_by_sum
+
         self.grid_size = image_size[0] // PS, image_size[1] // PS
         self.num_patches = self.grid_size[0] * self.grid_size[1]
-        self.num_weights = self.num_patches * num_tensors
+        self.num_weights = self.num_patches * self.num_tensors
 
-        print(f'GS: {self.grid_size}')
-        print(f'num_patches: {self.num_patches}')
-        print(f'num_weights: {self.num_weights}')
-        
-        self.proj = nn.Conv2d(in_channels=num_tensors, out_channels=num_tensors, kernel_size=PS, stride=PS)
+        self.weights = nn.Parameter(
+            torch.randn(
+                1,
+                self.num_tensors, 
+                self.grid_size[0], 
+                self.grid_size[1]
+                ),
+                requires_grad=True
+            )
+        self.upsample = nn.Upsample(size=self.image_size, mode='nearest')
+    
+    def forward(self, tensors):
+        upsampled_weights = self.upsample(self.weights)
+        output = tensors * upsampled_weights
+        output = torch.sum(output, dim=1).unsqueeze(dim=1)
+        if self.divide_by_sum:
+            weighted_sum = upsampled_weights.sum(dim=1)
+            output = torch.div(output, weighted_sum)
+            return output
+        return output
 
-        self.w = nn.Parameter(torch.randn(self.num_tensors, self.grid_size[0], self.grid_size[1]))
+class NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation(nn.Module):
+    def __init__(
+        self, 
+        cnn_model_cfg,
+        trans_model_cfg,
+        aggregate_patch_size=16,
+        with_fusion=True,
+        ):
+        super(NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation, self).__init__()
 
-    def forward(self, x):
-        print(f'w: {self.w.shape}')
+        self.patch_size = cnn_model_cfg['patch_size']
+        assert cnn_model_cfg['patch_size'] == trans_model_cfg['patch_size'], \
+            'patch_size not configd properly, model_cfgs have different values'
+        assert self.patch_size == 16 or self.patch_size == 32, \
+            'patch_size must be {16, 32}'
 
-        # x = torch.einsum('ik,kj->ij', [self.w])
-        return self.proj(x)
-        
-class PatchEmbedding(nn.Module):
-    def __init__(self, image_size, patch_size, embed_dim, channels):
-        super().__init__()
-
-        self.image_size = image_size
-        if image_size[0] % patch_size != 0 or image_size[1] % patch_size != 0:
-            raise ValueError("image dimensions must be divisible by the patch size")
-        self.grid_size = image_size[0] // patch_size, image_size[1] // patch_size
-        self.num_patches = self.grid_size[0] * self.grid_size[1]
-        self.patch_size = patch_size
-
-        self.proj = nn.Conv2d(
-            channels, embed_dim, kernel_size=patch_size, stride=patch_size
+        self.cnn_branch = zedNetDWSepWithCCM(
+            n_channels=cnn_model_cfg['in_channels'],
+            n_classes=cnn_model_cfg['num_classes'],
+            patch_size=cnn_model_cfg['patch_size'],
+            bilinear=True,
+            attention=True,
+        )
+        # now populate dimensions 
+        self.cnn_branch.get_dimensions(
+            N_in = cnn_model_cfg['batch_size'],
+            C_in = cnn_model_cfg['in_channels'],
+            H_in = cnn_model_cfg['image_size'][0], 
+            W_in = cnn_model_cfg['image_size'][1]
         )
 
-    def forward(self, im):
-        B, C, H, W = im.shape
-        x = self.proj(im).flatten(2).transpose(1, 2)
-        print(f'proj weights: {self.proj.weight.shape}')
-        return x
+        print(f'Warning in file: {__file__}, we are manually assigning the \
+decoder to have a `linear` value in create_transformer when creating the \
+fusion network and thus not using the decoder value input to main() in \
+train.py, but im too tired to try and figure out how to work that and were \
+running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
+        # need to do something or pull information from the trans_model_cfg and
+        #  pull that info. but yeah. wahtever rn lol 
+        self.trans_branch = create_transformerV2(trans_model_cfg, 
+            decoder='linear')
+        
+        num_output_trans = trans_model_cfg['num_output_trans']
+        print(f'num_output_trans: {num_output_trans}')
+        # num_output_trans = 64
+
+        self.with_fusion = with_fusion
+        if self.with_fusion:
+            self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
+                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+            self.fuse_1_4 = MiniEncoderFuseDWSep(
+                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+            self.fuse_1_8 = MiniEncoderFuseDWSep(
+                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+            self.fuse_1_16 = MiniEncoderFuseDWSep(
+                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+            if self.patch_size == 32:
+                self.fuse_1_32 = MiniEncoderFuseDWSep(
+                    self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
+        
+        self.agg = PatchAggregation(
+            image_size=cnn_model_cfg['image_size'], 
+            PS=aggregate_patch_size, 
+            num_tensors=6, 
+            divide_by_sum=True
+        )
+
+    def forward(self, images):
+        x_final_cnn = self.cnn_branch(images)
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+
+        self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch.x_1_2)
+        self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch.x_1_4)
+        self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch.x_1_8)
+        self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch.x_1_16)
+
+        tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
+        output = self.agg(torch.cat(tensor_list, dim=1))
+        return output
 
 
 if __name__ == '__main__':
-    # num_tensors = 5 
-    # tList = list()
-    # for i in range(num_tensors):
-    #     tList.append(torch.randn((5, 1, 256, 256), device='cuda'))
-
-    # wAvg = WeightedAvg(num_tensors).cuda()
-
-    # res = wAvg(tList)
-
-    # print(f'res: {res.shape}')
-
-    image_size = (256, 256)
-    num_tensors=5
+    batch_size = 5
+    image_size = (512, 512)
+    patch_size = 16
+    num_tensors = 4
     tlist = list()
     for i in range(num_tensors):
-        tlist.append(torch.randn((1, 1, image_size[0], image_size[1]), device='cuda'))
+        tlist.append(torch.randn((batch_size, 1, image_size[0], image_size[1]), device='cuda'))
     
     x = torch.cat(tlist, dim=1)
 
-    c = Crazy(
-        image_size=image_size,
-        PS = 128, 
-        num_tensors=5,
+    mod = PatchAggregation(
+        image_size = image_size,
+        PS = patch_size,
+        num_tensors=num_tensors
     ).cuda()
 
-    y = c(x)
+    y = mod(x)
+    print(f'y.shape: {y.shape}')
 
-    print(f'y.shape:{y.shape}')
+    weights = torch.randn((1, 2, 2, 2))
+    print(f'weights:\n{weights}')
+    weight_sum = weights.sum(dim=1)
+    print(f'weighted_sum:\n{weight_sum}')
 
-    tensor_shape = (1, 224, 224)  # shape of each tensor
-    five_tensors = torch.randn(5, *tensor_shape, requires_grad=True)
-    weights = torch.rand(5, requires_grad=True)
-    weighted_avg = (weights.view(5, 1, 1, 1) * five_tensors).sum(dim=0) / weights.sum()
-    print(f'five_tensors.shape: {five_tensors.shape}')
-    print((five_tensors[:, 0, 100, 100] * weights).sum() / weights.sum())
-    print(weighted_avg[0, 100, 100])
-    print(f'weighted_avg.shape: {weighted_avg.shape}')
+    count_parameters(mod)

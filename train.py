@@ -709,11 +709,13 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
-    elif model_name == 'NewZedFusionNetworkDWSepWithWeights':
-        from seg.model.Fusion.tNewFusionNetwork import NewZedFusionNetworkDWSepWithWeights
-        model = NewZedFusionNetworkDWSepWithWeights(
+    elif model_name == 'NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation':
+        from seg.model.Fusion.tNewFusionNetwork import NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation
+        model = NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation(
             cnn_model_cfg,
             trans_model_cfg,
+            aggregate_patch_size=16,
+            divide_by_sum=True,
         ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')

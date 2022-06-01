@@ -60,7 +60,7 @@ class NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation(nn.Module):
         cnn_model_cfg,
         trans_model_cfg,
         aggregate_patch_size=16,
-        with_fusion=True,
+        divide_by_sum=True,
         ):
         super(NewZedFusionNetworkDWSepWithCCMinDWModuleWithPatchAggregation, self).__init__()
 
@@ -99,25 +99,20 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         print(f'num_output_trans: {num_output_trans}')
         # num_output_trans = 64
 
-        self.with_fusion = with_fusion
-        if self.with_fusion:
-            self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
-                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
-            self.fuse_1_4 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
-            self.fuse_1_8 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
-            self.fuse_1_16 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
-            if self.patch_size == 32:
-                self.fuse_1_32 = MiniEncoderFuseDWSep(
-                    self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
-        
+        self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
+            self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+        self.fuse_1_4 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+        self.fuse_1_8 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+        self.fuse_1_16 = MiniEncoderFuseDWSep(
+            self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+    
         self.agg = PatchAggregation(
             image_size=cnn_model_cfg['image_size'], 
             PS=aggregate_patch_size, 
             num_tensors=6, 
-            divide_by_sum=True
+            divide_by_sum=divide_by_sum,
         )
 
     def forward(self, images):

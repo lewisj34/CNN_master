@@ -84,12 +84,12 @@ def main(
     print(out_iou_based)
     print(out_dice_based)
 
-    print('#'*5, 'IoU Based Max', '#'*5, 'Dice Based Max', '#'*5)
+    print('#'*5, 'IoU Based Max', '#'*5, "\t\t",'#'*5,'Dice Based Max', '#'*5)
     print('Epoch \t max(IoU) \t (Dice, IoU) \t\t\t Epoch \t max(Dice) \t (Dice, IoU)')
     for i in range(len(out_iou_based)):
         epoch_at_iou_max, iou_max, dice_at_iou_max = out_iou_based[i]
         epoch_at_dice_max, dice_max, iou_at_dice_max = out_dice_based[i]
-        print('{} \t {:.3f} \t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(
+        print('{} \t {:.3f} \t\t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(
             epoch_at_iou_max, iou_max, dice_at_iou_max, iou_max,
             epoch_at_dice_max, dice_max, dice_max, iou_at_dice_max
         ))

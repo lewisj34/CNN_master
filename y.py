@@ -1,4 +1,5 @@
-import argparse
+import click
+import os
 import numpy as np 
 
 def whipThroughTextFiles(dir: str):
@@ -52,14 +53,14 @@ def whipThroughTextFiles(dir: str):
         
         return iou_combined, dice_combined
 
+from glob import glob 
+@click.command(help='')
+@click.option('--results_dir', type=str, default='results/DataParallel')
+def main(
+    results_dir,
+):
+    results_list = glob(results_dir + '/*/')
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--data', nargs='+', type=str)
-    args = parser.parse_args()
-
-    results_list = list(args.data)
-    
     out_iou_based = list()
     out_dice_based = list()
     for i in range(len(results_list)):
@@ -79,16 +80,9 @@ if __name__ == '__main__':
         dice_stats = (epoch_at_dice_max, dice_max, iou_at_dice_max)
         out_iou_based.append(iou_stats)
         out_dice_based.append(dice_stats)
-
-        # out[i, 0] = epoch_at_iou_max
-        # out[i, 1] = dice_at_iou_max
-        # out[i, 2] = iou_max
-        # out[i, 3] = epoch_at_dice_max
-        # out[i, 4] = dice_max
-        # out[i, 5] = iou_at_dice_max
-        
+    
     print(out_iou_based)
     print(out_dice_based)
-        
-    # problem: write a script that iterates through results (and therefore 
-    # DataParallel) and spits out all the results
+
+if __name__ == '__main__':
+    main()

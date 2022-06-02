@@ -84,5 +84,22 @@ def main(
     print(out_iou_based)
     print(out_dice_based)
 
+    print('Epoch @ IoU Max \t max(IoU) \t Dice @ max(IoU) \t max(IoU) \t\t\t Epoch @ Dice Max \t max(Dice) \t IoU @ max(Dice)')
+    for i in range(len(out_iou_based)):
+        epoch_at_iou_max, iou_max, dice_at_iou_max = out_iou_based[i]
+        epoch_at_dice_max, dice_max, iou_at_dice_max = out_dice_based[i]
+        print('{} \t {:.3f} \t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(
+            epoch_at_iou_max, iou_max, dice_at_iou_max, iou_max,
+            epoch_at_dice_max, dice_max, dice_max, iou_at_dice_max
+        ))
+
+
+    # print('\n\n')
+    # print('\n')
+    # print('Stat \t Epoch \t Max \t (dice, IoU)')
+    # print('IoU  \t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(np.argmax(iou_combined), np.max(iou_combined), dice_combined[np.argmax(iou_combined)], iou_combined[np.argmax(iou_combined)]))
+    # print('Dice \t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(np.argmax(dice_combined), np.max(dice_combined), dice_combined[np.argmax(dice_combined)], iou_combined[np.argmax(dice_combined)]))
+    # print('\n')
+
 if __name__ == '__main__':
     main()

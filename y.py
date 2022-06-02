@@ -1,6 +1,9 @@
 import click
 import os
-import numpy as np 
+import numpy as np
+import yaml 
+
+from pathlib import Path
 
 def whipThroughTextFiles(dir: str):
         tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
@@ -85,14 +88,19 @@ def main(
     print(out_dice_based)
 
     print('#'*5, 'IoU Based Max', '#'*5, "\t\t",'#'*5,'Dice Based Max', '#'*5)
-    print('Epoch \t max(IoU) \t (Dice, IoU) \t\t\t Epoch \t max(Dice) \t (Dice, IoU)')
+    print('Epoch \t max(IoU) \t (Dice, IoU) \t\t\t Epoch \t max(Dice) \t (Dice, IoU) \t Dir \t\t\t Model Name')
     for i in range(len(out_iou_based)):
         epoch_at_iou_max, iou_max, dice_at_iou_max = out_iou_based[i]
         epoch_at_dice_max, dice_max, iou_at_dice_max = out_dice_based[i]
-        print('{} \t {:.3f} \t\t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t ({:.3f}, {:.3f}) \t {}'.format(
+
+        final_cfg = yaml.load(open(Path(__file__).parent / results_list[i], "r"), 
+            Loader=yaml.FullLoader)
+
+        model_name = final_cfg['model_name']
+        print('{} \t {:.3f} \t\t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t\t ({:.3f}, {:.3f}) \t {} \t {}'.format(
             epoch_at_iou_max, iou_max, dice_at_iou_max, iou_max,
             epoch_at_dice_max, dice_max, dice_max, iou_at_dice_max,
-            results_list[i]
+            os.path.basename(results_list[i]), model_name,
         ))
 
 

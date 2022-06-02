@@ -31,27 +31,31 @@ def whipThroughTextFiles(dir: str):
 
         num_epochs = len(iou_data_0)
         
-        print(f'{tests[0]} \t\t{tests[1]} \t{tests[2]} \t{tests[3]} \t{tests[4]} \t\tAvg(dice, IoU)')
+        dice_combined = list()
+        iou_combined = list()
+        print(f'Epoch\t{tests[0]} \t\t{tests[1]} \t{tests[2]} \t{tests[3]} \t{tests[4]} \t\tAvg(dice, IoU)')
         for i in range(num_epochs):
             SET_dice_avg = np.mean((np.mean(dice_data_0[i]), np.mean(dice_data_1[i]), np.mean(dice_data_2[i]), np.mean(dice_data_3[i]), np.mean(dice_data_4[i])))
             SET_iou_avg = np.mean((np.mean(iou_data_0[i]), np.mean(iou_data_1[i]), np.mean(iou_data_2[i]), np.mean(iou_data_3[i]), np.mean(iou_data_4[i])))
-            print("({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f})".format(np.mean(dice_data_0[i]), np.mean(iou_data_0[i]), np.mean(dice_data_1[i]), np.mean(iou_data_1[i]), np.mean(dice_data_2[i]), np.mean(iou_data_2[i]), np.mean(dice_data_3[i]), np.mean(iou_data_3[i]), np.mean(dice_data_4[i]), np.mean(iou_data_4[i]), SET_dice_avg, SET_iou_avg))
+            print("{}\t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f})".format(i, np.mean(dice_data_0[i]), np.mean(iou_data_0[i]), np.mean(dice_data_1[i]), np.mean(iou_data_1[i]), np.mean(dice_data_2[i]), np.mean(iou_data_2[i]), np.mean(dice_data_3[i]), np.mean(iou_data_3[i]), np.mean(dice_data_4[i]), np.mean(iou_data_4[i]), SET_dice_avg, SET_iou_avg))
+            dice_combined.append(SET_dice_avg)
+            iou_combined.append(SET_iou_avg)
 
-        # SET_dice_avg = np.mean((np.mean(dice_data_0[start_epoch:end_epoch]), np.mean(dice_data_1[start_epoch:end_epoch]), np.mean(dice_data_2[start_epoch:end_epoch]), np.mean(dice_data_3[start_epoch:end_epoch]), np.mean(dice_data_4[start_epoch:end_epoch])))
-        # SET_iou_avg = np.mean((np.mean(iou_data_0[start_epoch:end_epoch]), np.mean(iou_data_1[start_epoch:end_epoch]), np.mean(iou_data_2[start_epoch:end_epoch]), np.mean(iou_data_3[start_epoch:end_epoch]), np.mean(iou_data_4[start_epoch:end_epoch])))
+        print('\n\n')
+        print(f'#'*45, ' SUMMARY ', '#'*45)
+        print('\n')
+        print('Stat \t Epoch \t Max \t (dice, IoU)')
+        print('IoU  \t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(np.argmax(iou_combined), np.max(iou_combined), dice_combined[np.argmax(iou_combined)], iou_combined[np.argmax(iou_combined)]))
+        print('Dice \t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(np.argmax(dice_combined), np.max(dice_combined), dice_combined[np.argmax(dice_combined)], iou_combined[np.argmax(dice_combined)]))
+        print('\n')
+        print(f'#'*45, ' ####### ', '#'*45, '\n')
 
-        # print('\n\n')
-        # print(f'Param \t\t{tests[0]} \t\t{tests[1]} \t{tests[2]} \t{tests[3]} \t{tests[4]} \t\tAvg(dice, IoU) \tEpoch Range')
-        # print("max(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t---------- \t----------".format(np.max(dice_data_0), np.max(iou_data_0), np.max(dice_data_1), np.max(iou_data_1), np.max(dice_data_2), np.max(iou_data_2), np.max(dice_data_3), np.max(iou_data_3), np.max(dice_data_4), np.max(iou_data_4)))
-        # print("avg(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t[{}, {}]".format(np.mean(dice_data_0[start_epoch:end_epoch]), np.mean(iou_data_0[start_epoch:end_epoch]), np.mean(dice_data_1[start_epoch:end_epoch]), np.mean(iou_data_1[start_epoch:end_epoch]), np.mean(dice_data_2[start_epoch:end_epoch]), np.mean(iou_data_2[start_epoch:end_epoch]), np.mean(dice_data_3[start_epoch:end_epoch]), np.mean(iou_data_3[start_epoch:end_epoch]), np.mean(dice_data_4[start_epoch:end_epoch]), np.mean(iou_data_4[start_epoch:end_epoch]), SET_dice_avg, SET_iou_avg, start_epoch, end_epoch))
-        # print('\n\n')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', nargs='+', type=str)
     args = parser.parse_args()
 
-    print(f'', args.data)
     results_list = list(args.data)
     for i in range(len(results_list)):
         whipThroughTextFiles(results_list[i])

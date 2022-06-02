@@ -1,95 +1,58 @@
-import os
-from datetime import datetime
 import argparse
-import torch.multiprocessing as mp
-import torchvision
-import torchvision.transforms as transforms
-import torch
-import torch.nn as nn
-import torch.distributed as dist
-from apex.parallel import DistributedDataParallel as DDP
-from apex import amp
+import numpy as np 
 
-class ConvNet(nn.Module):
-    def __init__(self, num_classes=10):
-        super(ConvNet, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 200, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(200),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(200, 400, kernel_size=5, stride=1, padding=2),
-            nn.BatchNorm2d(400),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.fc = nn.Linear(7*7*400, num_classes)
+def whipThroughTextFiles(dir: str):
+        tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
+        print(f'result_dir: {dir}')
+        iou_path_0 = dir + '/test_' + tests[0] + '_iou_file.txt'
+        dice_path_0 = dir + '/test_' + tests[0] + '_dice_file.txt'
+        iou_data_0 = np.loadtxt(iou_path_0)
+        dice_data_0 = np.loadtxt(dice_path_0)
 
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.fc(out)
-        return out
+        iou_path_1 = dir + '/test_' + tests[1] + '_iou_file.txt'
+        dice_path_1 = dir + '/test_' + tests[1] + '_dice_file.txt'
+        iou_data_1 = np.loadtxt(iou_path_1)
+        dice_data_1 = np.loadtxt(dice_path_1)
 
+        iou_path_2 = dir + '/test_' + tests[2] + '_iou_file.txt'
+        dice_path_2 = dir + '/test_' + tests[2] + '_dice_file.txt'
+        iou_data_2 = np.loadtxt(iou_path_2)
+        dice_data_2 = np.loadtxt(dice_path_2)
 
+        iou_path_3 = dir + '/test_' + tests[3] + '_iou_file.txt'
+        dice_path_3 = dir + '/test_' + tests[3] + '_dice_file.txt'
+        iou_data_3 = np.loadtxt(iou_path_3)
+        dice_data_3 = np.loadtxt(dice_path_3)
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--nodes', default=1, type=int, metavar='N')
-    parser.add_argument('-g', '--gpus', default=1, type=int,
-                        help='number of gpus per node')
-    parser.add_argument('-nr', '--nr', default=0, type=int,
-                        help='ranking within the nodes')
-    parser.add_argument('--epochs', default=2, type=int, metavar='N',
-                        help='number of total epochs to run')
-    args = parser.parse_args()
-    train(0, args)
-    
-def train(gpu, args):
-    torch.manual_seed(0)
-    model = ConvNet()
-    torch.cuda.set_device(gpu)
-    model.cuda(gpu)
-    batch_size = 100
-    # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda(gpu)
-    optimizer = torch.optim.SGD(model.parameters(), 1e-4)
-    # Data loading code
-    train_dataset = torchvision.datasets.MNIST(root='./data',
-                                            train=True,
-                                            transform=transforms.ToTensor(),
-                                            download=True)
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                            batch_size=batch_size,
-                                            shuffle=True,
-                                            num_workers=0,
-                                            pin_memory=True)
+        iou_path_4 = dir + '/test_' + tests[4] + '_iou_file.txt'
+        dice_path_4 = dir + '/test_' + tests[4] + '_dice_file.txt'
+        iou_data_4 = np.loadtxt(iou_path_4)
+        dice_data_4 = np.loadtxt(dice_path_4)
 
-    start = datetime.now()
-    total_step = len(train_loader)
-    for epoch in range(args.epochs):
-        for i, (images, labels) in enumerate(train_loader):
-            images = images.cuda(non_blocking=True)
-            labels = labels.cuda(non_blocking=True)
-            # Forward pass
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+        num_epochs = len(iou_data_0)
+        
+        print(f'{tests[0]} \t\t{tests[1]} \t{tests[2]} \t{tests[3]} \t{tests[4]} \t\tAvg(dice, IoU)')
+        for i in range(num_epochs):
+            SET_dice_avg = np.mean((np.mean(dice_data_0[i]), np.mean(dice_data_1[i]), np.mean(dice_data_2[i]), np.mean(dice_data_3[i]), np.mean(dice_data_4[i])))
+            SET_iou_avg = np.mean((np.mean(iou_data_0[i]), np.mean(iou_data_1[i]), np.mean(iou_data_2[i]), np.mean(iou_data_3[i]), np.mean(iou_data_4[i])))
+            print("({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f})".format(np.mean(dice_data_0[i]), np.mean(iou_data_0[i]), np.mean(dice_data_1[i]), np.mean(iou_data_1[i]), np.mean(dice_data_2[i]), np.mean(iou_data_2[i]), np.mean(dice_data_3[i]), np.mean(iou_data_3[i]), np.mean(dice_data_4[i]), np.mean(iou_data_4[i]), SET_dice_avg, SET_iou_avg))
 
-            # Backward and optimize
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            if (i + 1) % 100 == 0 and gpu == 0:
-                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
-                    epoch + 1, 
-                    args.epochs, 
-                    i + 1, 
-                    total_step,
-                    loss.item())
-                )
-    if gpu == 0:
-        print("Training complete in: " + str(datetime.now() - start))
+        # SET_dice_avg = np.mean((np.mean(dice_data_0[start_epoch:end_epoch]), np.mean(dice_data_1[start_epoch:end_epoch]), np.mean(dice_data_2[start_epoch:end_epoch]), np.mean(dice_data_3[start_epoch:end_epoch]), np.mean(dice_data_4[start_epoch:end_epoch])))
+        # SET_iou_avg = np.mean((np.mean(iou_data_0[start_epoch:end_epoch]), np.mean(iou_data_1[start_epoch:end_epoch]), np.mean(iou_data_2[start_epoch:end_epoch]), np.mean(iou_data_3[start_epoch:end_epoch]), np.mean(iou_data_4[start_epoch:end_epoch])))
+
+        # print('\n\n')
+        # print(f'Param \t\t{tests[0]} \t\t{tests[1]} \t{tests[2]} \t{tests[3]} \t{tests[4]} \t\tAvg(dice, IoU) \tEpoch Range')
+        # print("max(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t---------- \t----------".format(np.max(dice_data_0), np.max(iou_data_0), np.max(dice_data_1), np.max(iou_data_1), np.max(dice_data_2), np.max(iou_data_2), np.max(dice_data_3), np.max(iou_data_3), np.max(dice_data_4), np.max(iou_data_4)))
+        # print("avg(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t[{}, {}]".format(np.mean(dice_data_0[start_epoch:end_epoch]), np.mean(iou_data_0[start_epoch:end_epoch]), np.mean(dice_data_1[start_epoch:end_epoch]), np.mean(iou_data_1[start_epoch:end_epoch]), np.mean(dice_data_2[start_epoch:end_epoch]), np.mean(iou_data_2[start_epoch:end_epoch]), np.mean(dice_data_3[start_epoch:end_epoch]), np.mean(iou_data_3[start_epoch:end_epoch]), np.mean(dice_data_4[start_epoch:end_epoch]), np.mean(iou_data_4[start_epoch:end_epoch]), SET_dice_avg, SET_iou_avg, start_epoch, end_epoch))
+        # print('\n\n')
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data', nargs='+', type=str)
+    args = parser.parse_args()
+
+    print(f'', args.data)
+    results_list = list(args.data)
+    for i in range(len(results_list)):
+        whipThroughTextFiles(results_list[i])
+

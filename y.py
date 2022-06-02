@@ -89,9 +89,10 @@ def main(
     for i in range(len(out_iou_based)):
         epoch_at_iou_max, iou_max, dice_at_iou_max = out_iou_based[i]
         epoch_at_dice_max, dice_max, iou_at_dice_max = out_dice_based[i]
-        print('{} \t {:.3f} \t\t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t ({:.3f}, {:.3f})'.format(
+        print('{} \t {:.3f} \t\t ({:.3f}, {:.3f}) \t\t {} \t {:.3f} \t ({:.3f}, {:.3f}) \t {}'.format(
             epoch_at_iou_max, iou_max, dice_at_iou_max, iou_max,
-            epoch_at_dice_max, dice_max, dice_max, iou_at_dice_max
+            epoch_at_dice_max, dice_max, dice_max, iou_at_dice_max,
+            results_list[i]
         ))
 
 

@@ -103,11 +103,18 @@ def main(
     else:
         raise ValueError(f'invalid model: {model_name}')
 
+    num_gpu = torch.cuda.device_count()
+    print(f'Number of GPUs: {num_gpu}')
+    for i in range(num_gpu):
+        print(f'Device name: {torch.cuda.get_device_name(i)}')
+    if num_gpu > 1:
+        model = torch.nn.DataParallel(model)
+
     print(f'Resuming at path: {os.path.basename(checkpoint_pth)}')
     checkpoint = torch.load(checkpoint_pth)
     model.load_state_dict(checkpoint['model_state_dict'])
 
-    model.load_state_dict(torch.load(checkpoint_pth))
+    # model.load_state_dict(torch.load(checkpoint_pth))
     model.cuda()
     model.eval()
 

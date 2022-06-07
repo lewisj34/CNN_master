@@ -165,6 +165,11 @@ def main(
         tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
         for i in range(len(tests)):
             print(f'test: {tests[i]}')
+            print(f'output.shape: {output.shape}')
+            print(f'images.shape: {images.shape}')
+            print(f'gts.shape: {gts.shape}')
+            output = output.sigmoid().data.cpu().numpy().squeeze()
+            print(f'output.shape: {output.shape}')
 
     
 

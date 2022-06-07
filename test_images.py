@@ -149,7 +149,8 @@ def main(
             print(f'output.shape: {output.shape}')
             print(f'images.shape: {images.shape}')
             print(f'gts.shape: {gts.shape}')
-            # output = output.sigmoid().data.cpu().numpy().squeeze()
+            output = output.sigmoid().data.cpu().numpy().squeeze()
+            print(f'output.shape: {output.shape}')
 
     else:
         # NOTE: ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
@@ -161,6 +162,9 @@ def main(
             num_workers=4,
             pin_memory=True,
         )
+        tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
+        for i in range(len(tests)):
+
     
 
 

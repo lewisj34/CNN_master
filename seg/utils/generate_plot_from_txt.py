@@ -142,8 +142,10 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epo
     print(dice_max)
     print(dice_avg)
 if __name__ == '__main__':
-    iou_loss1 = 'results/OldFusionNetwork/OldFusionNetwork_3/test_dice_file.txt'
-    iou_loss2 = 'results/OldFusionNetwork/OldFusionNetwork_4/test_dice_file.txt'
+    dice_loss1 = 'results/OldFusionNetwork/OldFusionNetwork_3/test_dice_file.txt'
+    dice_loss2 = 'results/OldFusionNetwork/OldFusionNetwork_4/test_dice_file.txt'
+
+    generateDualLossPlot(dice_loss1, dice_loss2, f'dice losses', 'blew', 'blah')
 
     # generateDualLossPlot(
     #     iou_loss1, 

@@ -7,6 +7,7 @@ import logging
 import socket
 
 from pathlib import Path
+from scipy import misc
 from seg.model.PraNet.lib.PraNet_Res2Net import PraNet
 from seg.model.SwinUNet.vision_transformer import SwinUnet
 from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
@@ -54,9 +55,13 @@ def force_cudnn_initialization():
 @click.command(help='')
 @click.option('--results_dir', type=str, default='results/DataParallel/DataParallel_11')
 @click.option('--checkpoint_pth', type=str, default='results/DataParallel/DataParallel_11/current_checkpoints/DataParallel-218.pth')
+@click.option('--dataset', type=str, default='master')
+@click.option('--save_dir', type = str, default='seg/data/master')
 def main(
+    dataset,
     results_dir,
     checkpoint_pth,
+    save_dir,
 ):
     if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
         dataset_file_location = '/home/lewisj34_local/Dev/Datasets/master_polyp'
@@ -121,6 +126,42 @@ def main(
     save_path = results_dir + '/tests/'
     os.makedirs(save_path, exist_ok=True)
     print(f'os.save_path: {save_path}')
+
+    # dataset stuff 
+    if dataset != 'master':
+        test_loader = get_tDataset(
+            image_root = save_dir + "/data_test.npy",
+            gt_root = save_dir + "/mask_test.npy",
+            normalize_gt = False,
+            batch_size = 1,
+            normalization = "deit" if "deit" in backbone else "vit",
+            num_workers = 4, 
+            pin_memory=True,
+        )
+        for i, image_gts in enumerate(test_loader):
+            images, gts = image_gts
+            images = images.cuda()
+            gts = gts.cuda()
+
+            with torch.no_grad():
+                output = model(images)
+            
+            print(f'output.shape: {output.shape}')
+            print(f'images.shape: {images.shape}')
+            print(f'gts.shape: {gts.shape}')
+            # output = output.sigmoid().data.cpu().numpy().squeeze()
+
+    else:
+        # NOTE: ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
+        test_loader = get_tDatasets_master(
+            save_dir=save_dir,
+            normalize_gt=False,
+            batch_size=1, 
+            normalization="deit" if "deit" in backbone else "vit", 
+            num_workers=4,
+            pin_memory=True,
+        )
+    
 
 
 if __name__ == '__main__':

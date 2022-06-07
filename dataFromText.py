@@ -58,12 +58,8 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch, end_epoch):
     print(dice_avg)
 
 def ResultsStatsTableFromList(list_dirs: list, start_epoch, end_epoch):
-    # tests = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
     tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
-    ious_avg = np.zeros((len(tests), len(list_dirs)))
-    ious_max = np.zeros((len(tests), len(list_dirs)))
-    dice_max = np.zeros((len(tests), len(list_dirs)))
-    dice_avg = np.zeros((len(tests), len(list_dirs)))
+
     for j in range(len(list_dirs)):
         dir = list_dirs[j]
         valid_iou_path = dir + '/test_iou_file.txt'
@@ -105,38 +101,6 @@ def ResultsStatsTableFromList(list_dirs: list, start_epoch, end_epoch):
         print("max(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t---------- \t----------".format(np.max(dice_data_0), np.max(iou_data_0), np.max(dice_data_1), np.max(iou_data_1), np.max(dice_data_2), np.max(iou_data_2), np.max(dice_data_3), np.max(iou_data_3), np.max(dice_data_4), np.max(iou_data_4)))
         print("avg(dice, iou) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t({:.3f}, {:.3f}) \t[{}, {}]".format(np.mean(dice_data_0[start_epoch:end_epoch]), np.mean(iou_data_0[start_epoch:end_epoch]), np.mean(dice_data_1[start_epoch:end_epoch]), np.mean(iou_data_1[start_epoch:end_epoch]), np.mean(dice_data_2[start_epoch:end_epoch]), np.mean(iou_data_2[start_epoch:end_epoch]), np.mean(dice_data_3[start_epoch:end_epoch]), np.mean(iou_data_3[start_epoch:end_epoch]), np.mean(dice_data_4[start_epoch:end_epoch]), np.mean(iou_data_4[start_epoch:end_epoch]), SET_dice_avg, SET_iou_avg, start_epoch, end_epoch))
         print('\n\n')
-        for i in range(len(tests)): # ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
-            print(f'\t{tests[i]}')
-            iou_path = dir + '/test_' + tests[i] + '_iou_file.txt'
-            dice_path = dir + '/test_' + tests[i] + '_dice_file.txt'
-            iou_data = np.loadtxt(iou_path)
-            dice_data = np.loadtxt(dice_path)
-            # print("{:.2f}".format(3.1415926));
-            print("\t\tmax(dice, iou): ({:.3f}, {:.3f})".format(np.max(dice_data), np.max(iou_data)))
-            print("\t\tavg(dice, iou): ({:.3f}, {:.3f}) for [{}, {}]".format(np.mean(dice_data[start_epoch:end_epoch]), np.mean(iou_data[start_epoch:end_epoch]), start_epoch, end_epoch))
-            if end_epoch == None:
-                ious_max[i, j] = np.max(iou_data)
-                ious_avg[i, j] = np.mean(iou_data[start_epoch:])
-                dice_max[i, j] = np.max(dice_data)
-                dice_avg[i, j] = np.mean(dice_data[start_epoch:])
-            else:
-                ious_max[i, j] = np.max(iou_data)
-                ious_avg[i, j] = np.mean(iou_data[start_epoch:end_epoch])
-                dice_max[i, j] = np.max(dice_data)
-                dice_avg[i, j] = np.mean(dice_data[start_epoch:end_epoch])
-
-    for i in range(len(list_dirs)):
-        list_dirs[i] = os.path.basename(list_dirs[i])
-    if not os.path.isdir('garbage'):
-        os.mkdir('garbage')
-    pd.DataFrame(ious_max).to_csv('garbage/ious_max.csv', header=list_dirs)
-    pd.DataFrame(dice_max).to_csv('garbage/dice_max.csv', header=list_dirs)
-    # pd.DataFrame(ious_max).to_csv('ious.csv', header=list_dirs)
-    # pd.DataFrame(ious_max).to_csv('ious.csv', header=list_dirs)
-    print(ious_max)
-    print(ious_avg)
-    print(dice_max)
-    print(dice_avg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

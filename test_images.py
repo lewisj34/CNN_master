@@ -134,7 +134,7 @@ def main(
             gt_root = save_dir + "/mask_test.npy",
             normalize_gt = False,
             batch_size = 1,
-            normalization = "deit" if "deit" in backbone else "vit",
+            normalization = "vit",
             num_workers = 4, 
             pin_memory=True,
         )
@@ -158,12 +158,13 @@ def main(
             save_dir=save_dir,
             normalize_gt=False,
             batch_size=1, 
-            normalization="deit" if "deit" in backbone else "vit", 
+            normalization="vit", 
             num_workers=4,
             pin_memory=True,
         )
         tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
         for i in range(len(tests)):
+            print(f'test: {tests[i]}')
 
     
 

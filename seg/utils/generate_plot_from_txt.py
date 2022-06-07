@@ -10,6 +10,7 @@ Generates a plot from a .txt file containing IoU, Dice, or General loss
     0.801
 """
 import os
+import socket 
 import numpy as np 
 import matplotlib.pyplot as plt 
 
@@ -29,6 +30,9 @@ def generateDualLossPlot(
     curve_title,
     label_loss_path1,
     label_loss_path2,
+    epoch=218,
+    save_plot_name=None,
+    showPlot=False,
 ):
     """
     Generates a plot of two .txt files (loss_path1, loss_path2). 
@@ -53,7 +57,7 @@ def generateDualLossPlot(
     # plt.ylim(min(min(test_losses), min(valid_losses)), max(max(test_losses), max(valid_losses)))
     plt.title(curve_title)
     plt.legend()
-    plt.show()
+    # plt.show()
 
     # this is specific to the paths 
         # iou_loss1 = 'results/Transformer/Transformer_6/test_iou_file.txt'
@@ -61,12 +65,21 @@ def generateDualLossPlot(
     max_loss1 = np.max(loss_data1)
     max_loss2 = np.max(loss_data2)
 
-    mean_loss1_bw80and100 = np.mean(loss_data1[80:])
-    mean_loss2_bw80and100 = np.mean(loss_data2[80:])
     print(f'max loss from loss_path1: {max_loss1}')
     print(f'max loss from loss_path2: {max_loss2}')
-    print(f'mean_loss between_80_and_100 loss_path1: {mean_loss1_bw80and100}')
-    print(f'mean_loss between_80_and_100 loss_path2: {mean_loss2_bw80and100}')
+    print(f'[{curve_title}] {label_loss_path1} loss @ epoch: {epoch}: {loss_data1[epoch]}')
+    print(f'[{curve_title}] {label_loss_path2} loss @ epoch: {epoch}: {loss_data2[epoch]}')
+
+    if save_plot_name is not None:
+        print(f'Saving figures.')
+        plt.savefig(save_plot_name)
+        if showPlot:
+            plt.show()
+        else:
+            plt.close()
+    else:
+        print(f'\nNot saving figures!')
+        plt.show()
 
 def getMajorStatisticsFromSingleLossPath(loss_path):
     loss_data = np.loadtxt(loss_path)
@@ -142,14 +155,47 @@ def getAllDatasetStatisticsFromListDir(list_dirs: list, start_epoch=700, end_epo
     print(dice_max)
     print(dice_avg)
 if __name__ == '__main__':
-    dice_loss1 = 'results/DataParallel/DataParallel_11/test_CVC_300_dice_file.txt'
-    dice_loss2 = 'results/DataParallel/DataParallel_11/test_CVC_300_dice_file.txt'
+    # dice_loss1 = 'results/DataParallel/DataParallel_11/test_CVC_300_dice_file.txt'
+    # dice_loss2 = 'results/DataParallel/DataParallel_11/test_CVC_300_dice_file.txt'
 
-    
+    tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
+    parent_dir = 'results/BEST'
+
+    if socket.gethostname() == 'john-linux':
+        parent_dir = 'results/BEST'
+    elif socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca':
+        parent_dir = 'results/DataParallel/DataParallel_11'
+
+    chart_dir = f'{parent_dir}/charts/'
+    os.makedirs(chart_dir, exist_ok=True)
+
+    valid_iou_path = f'{parent_dir}/valid_iou_file.txt'
+    valid_dice_path = f'{parent_dir}/valid_dice_file.txt'
     for i in range(len(tests)):
+        print(f'Test: {tests[i]}')
+        iou_ = 'iou'
+        test_iou_path = f'{parent_dir}/test_{tests[i]}_iou_file.txt'
+        test_dice_path = f'{parent_dir}/test_{tests[i]}_dice_file.txt'
 
+        generateDualLossPlot(
+            test_iou_path, 
+            valid_iou_path, 
+            f'{tests[i]} IoU Comparison', 
+            f'Test', 
+            f'Valid', 
+            save_plot_name=f'{chart_dir}/{tests[i]}_iou_plot.png',
+        )
+        generateDualLossPlot(
+            test_dice_path, 
+            valid_dice_path, 
+            f'{tests[i]} Dice Comparison', 
+            f'Test', 
+            f'Valid', 
+            epoch=218,
+            save_plot_name=f'{chart_dir}/{tests[i]}_dice_plot.png',
+        )
 
-    generateDualLossPlot(dice_loss1, dice_loss2, f'dice losses', 'blew', 'blah')
+    # generateDualLossPlot(dice_loss1, dice_loss2, f'dice losses', 'blew', 'blah')
 
     # generateDualLossPlot(
     #     iou_loss1, 
@@ -172,7 +218,8 @@ if __name__ == '__main__':
     # dice_original_version_no_decoderPlusTransformer = getMajorStatisticsFromSingleLossPath(
     #     'results/Transformer/Transformer_2/test_dice_file.txt')
 
-    getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_14'], start_epoch = 700, end_epoch = 750)
+    # getAllDatasetStatisticsFromListDir(['results/DataParallel/DataParallel_14'], start_epoch = 700, end_epoch = 750)
+
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B3/EffNet_B3_1')
     # getAllDatasetStatisticsFromDir(dir='results/EffNet_B4/EffNet_B4_1')
     # dirs = [

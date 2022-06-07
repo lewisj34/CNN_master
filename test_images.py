@@ -7,7 +7,7 @@ import logging
 import socket
 
 from pathlib import Path
-from scipy import misc
+from imageio import imwrite
 from seg.model.PraNet.lib.PraNet_Res2Net import PraNet
 from seg.model.SwinUNet.vision_transformer import SwinUnet
 from seg.model.losses.IoU_BCE_MultiScale import MultiScaleIoUBCELoss
@@ -165,11 +165,32 @@ def main(
         tests = ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
         for i in range(len(tests)):
             print(f'test: {tests[i]}')
-            print(f'output.shape: {output.shape}')
-            print(f'images.shape: {images.shape}')
-            print(f'gts.shape: {gts.shape}')
-            output = output.sigmoid().data.cpu().numpy().squeeze()
-            print(f'output.shape: {output.shape}')
+
+            for j, image_gts in enumerate(test_loader[i]):
+                images, gts = image_gts
+                images = images.cuda()
+                gts = gts.cuda()
+
+                with torch.no_grad():
+                    output = model(images)
+
+                output = model(images)
+                output = output.sigmoid().data.cpu().numpy().squeeze()
+                
+                name = tests[i] + '_' + str(j)
+                output_name = name + '_output.jpg'
+                image_name = name + '_image.jpg'
+                gt_name = name + '_gt.jpg'
+
+                images = images.cpu().numpy().squeeze()
+                gts = gts.cpu().numpy().squeeze().squeeze()
+                print(f'images: {images.shape}')
+                print(f'gts: {gts.shape}')
+                if j == 3:
+                    exit(1)
+                imwrite(save_path + output_name, output)
+                imwrite(save_path + image_name, images)
+                imwrite(save_path + gt_name, gts)
 
     
 

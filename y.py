@@ -1,3 +1,7 @@
+"""
+Whips through all files in results/ and pulls all of the best results that 
+correspond to ['Kvasir', 'CVC_ClinicDB', 'CVC_ColonDB', 'CVC_300', 'ETIS']
+"""
 import click
 import os
 import numpy as np

@@ -92,12 +92,30 @@ def process_dataset_augmentations(
 
         # save augmented images 
         seq = iaa.Sequential([
-            iaa.Dropout([0.05, 0.2]),      # drop 5% or 20% of all pixels
-            iaa.Sharpen((0.0, 1.0)),       # sharpen the image
-            iaa.Affine(rotate=(-45, 45)),  # rotate by -45 to 45 degrees (affects segmaps)
-            # iaa.ElasticTransformation(alpha=50, sigma=5)  # apply water effect (affects segmaps)
-            iaa.GaussianBlur(sigma=(0, 3.0))
-        ], random_order=True)
+            # Small gaussian blur with random sigma between 0 and 0.5.
+            # But we only blur about 80% of all images.
+            iaa.Dropout([0.05, 0.2]),  
+            iaa.Sometimes(
+                0.8,
+                iaa.GaussianBlur(sigma=(0, 0.5))
+            ),
+            # Strengthen or weaken the contrast in each image.
+            iaa.LinearContrast((0.75, 1.5)),
+            # Add gaussian noise.
+            # For 50% of all images, we sample the noise once per pixel.
+            # For the other 50% of all images, we sample the noise per pixel AND
+            # channel. This can change the color (not only brightness) of the
+            # pixels.
+            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
+            # Make some images brighter and some darker.
+            # In 50% of all cases, we sample the multiplier once per channel,
+            # which can end up changing the color of the images.
+            iaa.Multiply((0.8, 1.2), per_channel=0.5),
+            # flip horizontally 50% prob
+            iaa.Fliplr(0.5),
+            # flip vertically 50% prob
+            iaa.Flipud(0.5),
+        ], random_order=True) # apply augmenters in random order
         
         images_aug = []
         segmaps_aug = []
@@ -143,34 +161,145 @@ def process_dataset_augmentations(
         imageio.imwrite(f'{save_aug_ann_gray_dir}/z_adj_{paths[i]}', blackAndWhiteImage)
     
 
+import shutil
+
+def copyDir2Dir(
+    source_folder,
+    destination_folder,
+):
+    # fetch all files
+    for file_name in os.listdir(source_folder):
+        # construct full file path
+        source = source_folder + file_name
+        destination = destination_folder + file_name
+        # copy only files
+        if os.path.isfile(source):
+            shutil.copy(source, destination)
+            print('copied', file_name)
+        else:
+            print(f'ERROR. {source}')
+
+def copyFiles(
+    src_imgs,
+    src_anns,
+    dst_imgs='/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/images',
+    dst_anns='/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/annotations',
+):
+    assert os.path.isdir(src_imgs), f'src_imgs: {src_imgs} DNE.'
+    assert os.path.isdir(src_anns), f'src_anns: {src_anns} DNE.'
+    assert os.path.isdir(dst_imgs), f'src_imgs: {dst_imgs} DNE.'
+    assert os.path.isdir(dst_anns), f'src_imgs: {dst_anns} DNE.'
+
+    copyDir2Dir(src_imgs, dst_imgs)
+    copyDir2Dir(src_anns, dst_anns)
+
+def checkAllFilesFoundInDirectory(
+    sub_dir,
+    master_dir,
+):
+    """
+    checks files in sub_dir, which should be a subset of master_dir, which 
+    contains all files 
+    """
+    print(f'[{os.path.basename(sub_dir)} check]')
+    sub_files = os.listdir(sub_dir)
+    master_files = os.listdir(master_dir)
+
+    result = all(file in sub_files for file in master_files)
+
+    if result:
+        print(f'\tSuccess: all files in sub_dir: {sub_dir} found in master_dir: {master_dir}')
+    else:
+        raise ValueError(f'\tError: check.')
+    
+
+
 if __name__ == '__main__':
-    process_dataset_augmentations(
-        split_path='/home/john/Documents/Datasets/master_polyp/splits/ETIS_test.txt',        
-        save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/ETIS",     
-        img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
-        ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
-    )
-    process_dataset_augmentations(
-        split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',        
-        save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB",     
-        img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
-        ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
-    )
-    process_dataset_augmentations(
-        split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',        
-        save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB",     
-        img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
-        ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
-    )
-    process_dataset_augmentations(
-        split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_300_test.txt',        
-        save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_300",     
-        img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/images/',
-        ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/masks/',
-    )
-    process_dataset_augmentations(
-        split_path='/home/john/Documents/Datasets/master_polyp/splits/Kvasir_test.txt',        
-        save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/Kvasir",     
-        img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/images/',
-        ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/masks/',
-    )
+    # process_dataset_augmentations(
+    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/ETIS_test.txt',        
+    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/ETIS",     
+    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
+    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
+    # )
+    # process_dataset_augmentations(
+    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',        
+    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB",     
+    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
+    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
+    # )
+    # process_dataset_augmentations(
+    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',        
+    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB",     
+    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
+    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
+    # )
+    # process_dataset_augmentations(
+    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_300_test.txt',        
+    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasetsV2/CVC_300",     
+    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/images/',
+    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/masks/',
+    # )
+    # process_dataset_augmentations(
+    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/Kvasir_test.txt',        
+    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/Kvasir",     
+    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/images/',
+    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/masks/',
+    # )
+
+    # # copy all files 
+    # dst_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/images/'
+    # dst_anns = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/annotations/'
+
+    # kvasir_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/Kvasir/aug_images/'
+    # kvasir_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/Kvasir/aug_masks_gray/'
+
+    # CVC_300_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_300/aug_images/'
+    # CVC_300_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_300/aug_masks_gray/'
+
+    # CVC_ClinicDB_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB/aug_images/'
+    # CVC_ClinicDB_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB/aug_masks_gray/'
+
+    # CVC_ColonDB_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB/aug_images/'
+    # CVC_ColonDB_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB/aug_masks_gray/'
+
+    # ETIS_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/ETIS/aug_images/'
+    # ETIS_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/ETIS/aug_masks_gray/'
+
+    # copyFiles(
+    #     src_imgs=kvasir_imgs,
+    #     src_anns=kvasir_ans,
+    #     dst_imgs=dst_imgs,
+    #     dst_anns=dst_anns,
+    # )
+    # copyFiles(
+    #     src_imgs=CVC_300_imgs,
+    #     src_anns=CVC_300_ans,
+    #     dst_imgs=dst_imgs,
+    #     dst_anns=dst_anns,
+    # )
+    # copyFiles(
+    #     src_imgs=CVC_ClinicDB_imgs,
+    #     src_anns=CVC_ClinicDB_ans,
+    #     dst_imgs=dst_imgs,
+    #     dst_anns=dst_anns,
+    # )
+    # copyFiles(
+    #     src_imgs=CVC_ColonDB_imgs,
+    #     src_anns=CVC_ColonDB_ans,
+    #     dst_imgs=dst_imgs,
+    #     dst_anns=dst_anns,
+    # )
+    # copyFiles(
+    #     src_imgs=ETIS_imgs,
+    #     src_anns=ETIS_ans,
+    #     dst_imgs=dst_imgs,
+    #     dst_anns=dst_anns,
+    # )
+    # checkAllFilesFoundInDirectory(
+    #     sub_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/images/',
+    #     master_dir='/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_final/MergedDataset/images/',
+    # )
+    # checkAllFilesFoundInDirectory(
+    #     sub_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/masks/',
+    #     master_dir='/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_final/MergedDataset/annotations/',
+    # )

@@ -3,6 +3,7 @@ Goal is to iterate through a directory and get create a new set of images
 that is modified in terms of cropping and colour 
 """
 import os
+import socket
 from time import sleep
 
 import cv2
@@ -215,36 +216,94 @@ def checkAllFilesFoundInDirectory(
 
 
 if __name__ == '__main__':
-    # process_dataset_augmentations(
-    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/ETIS_test.txt',        
-    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/ETIS",     
-    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
-    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
-    # )
-    # process_dataset_augmentations(
-    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',        
-    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB",     
-    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
-    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
-    # )
-    # process_dataset_augmentations(
-    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',        
-    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB",     
-    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
-    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
-    # )
-    # process_dataset_augmentations(
-    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_300_test.txt',        
-    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasetsV2/CVC_300",     
-    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/images/',
-    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/masks/',
-    # )
-    # process_dataset_augmentations(
-    #     split_path='/home/john/Documents/Datasets/master_polyp/splits/Kvasir_test.txt',        
-    #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/Kvasir",     
-    #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/images/',
-    #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/masks/',
-    # )
+    if socket.gethostname() == "john-linux":
+        print(f'home comp in use.')
+        # code below needs checking...
+        # process_dataset_augmentations(
+        #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_300_test.txt',        
+        #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasetsV2/CVC_300",     
+        #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/images/',
+        #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-300/masks/',
+        # )
+        # process_dataset_augmentations(
+        #     split_path='/home/john/Documents/Datasets/master_polyp/splits/ETIS_test.txt',        
+        #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/ETIS",     
+        #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
+        #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
+        # )
+        # process_dataset_augmentations(
+        #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',        
+        #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB",     
+        #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
+        #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
+        # )
+        # process_dataset_augmentations(
+        #     split_path='/home/john/Documents/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',        
+        #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB",     
+        #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
+        #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
+        # )
+        # process_dataset_augmentations(
+        #     split_path='/home/john/Documents/Datasets/master_polyp/splits/Kvasir_test.txt',        
+        #     save_location = "/home/john/Documents/Datasets/master_polyp/AugmentedTestDatasets/Kvasir",     
+        #     img_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/images/',
+        #     ann_dir='/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/masks/',
+        # )
+    elif socket.gethostname() == "ce-yc-dlearn6.eng.umanitoba.ca" or socket.gethostname() == "ce-yc-dlearn5.eng.umanitoba.ca":
+        print(f'dlearn6 in use.')
+        process_dataset_augmentations(
+            split_path='/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',        
+            save_location = "/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasetsV2/CVC_300",     
+            img_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
+            ann_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
+        )
+        process_dataset_augmentations(
+            split_path='/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',        
+            save_location = "/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasetsV2/ETIS",     
+            img_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
+            ann_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
+        )
+        process_dataset_augmentations(
+            split_path='/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',        
+            save_location = "/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasetsV2/CVC_ColonDB",     
+            img_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
+            ann_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
+        )
+        # process_dataset_augmentations(
+        #     split_path='/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',        
+        #     save_location = "/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasetsV2/CVC_ClinicDB",     
+        #     img_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
+        #     ann_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
+        # )
+
+        # process_dataset_augmentations(
+        #     split_path='/home/lewisj34_local/Dev/Datasets/master_polyp/splits/Kvasir_test.txt',        
+        #     save_location = "/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasetsV2/Kvasir",     
+        #     img_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/images/',
+        #     ann_dir='/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/masks/',
+        # )
+        
+        # # copy all files 
+        dst_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/images/'
+        dst_anns = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/annotations/'
+
+        # kvasir_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/Kvasir/aug_images/'
+        # kvasir_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/Kvasir/aug_masks_gray/'
+
+        CVC_300_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_300/aug_images/'
+        CVC_300_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_300/aug_masks_gray/'
+
+        # CVC_ClinicDB_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB/aug_images/'
+        # CVC_ClinicDB_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ClinicDB/aug_masks_gray/'
+
+        CVC_ColonDB_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB/aug_images/'
+        CVC_ColonDB_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/CVC_ColonDB/aug_masks_gray/'
+
+        ETIS_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/ETIS/aug_images/'
+        ETIS_ans = '/home/lewisj34_local/Dev/Datasets/master_polyp/AugmentedTestDatasets/ETIS/aug_masks_gray/'
+    else:
+        print(f'IP not input correctly.')
+        raise ValueError(f'IP: {socket.gethostname()} not validated.')
 
     # # copy all files 
     # dst_imgs = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_with_augs/MergedDataset/images/'

@@ -110,9 +110,9 @@ def main(
     dataset_file_location,
     num_output_trans,
 ):
-    if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
-        dataset_file_location = '/home/lewisj34_local/Dev/Datasets/master_polyp'
-        print(f'Manually adjusting dataset_file_location to: {dataset_file_location}')
+    # if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
+    #     dataset_file_location = '/home/lewisj34_local/Dev/Datasets/master_polyp'
+    #     print(f'Manually adjusting dataset_file_location to: {dataset_file_location}')
 
     assert dataset in ALLOWABLE_DATASETS, 'invalid dataset'
     assert cnn_model_name in ALLOWABLE_CNN_MODELS, 'invalid cnn model choice'

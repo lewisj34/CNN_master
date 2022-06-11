@@ -437,7 +437,8 @@ if __name__ == '__main__':
             '/home/john/Documents/Datasets/master_polyp/TestDataset/Kvasir/masks/',
         ]
 
-    elif socket.gethostname() == f'ce-yc-dlearn{5, 6}.eng.umanitoba.ca':\
+    elif socket.gethostname() == f'ce-yc-dlearn5.eng.umanitoba.ca' \
+        or socket.gethostname() == f'ce-yc-dlearn6.eng.umanitoba.ca':\
         # imgs that aren't going to be augmented, but used in training 
         merge_src_dir = '/home/lewisj34_local/Dev/Datasets/master_polyp_mixed_final/MergedDataset'
         
@@ -452,24 +453,45 @@ if __name__ == '__main__':
 
         split_paths = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',  
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/Kvasir_test.txt', 
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/train.txt'
         ]
         src_img_dirs = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TrainDataset/image/'
         ]
         src_ann_dirs = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TrainDataset/mask/'
         ]
 
     if merged == True:

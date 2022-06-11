@@ -19,22 +19,22 @@ def _load_augmentation_aug_non_geometric():
     """
     return iaa.Sequential([
         iaa.Sometimes(0.3, iaa.Multiply((0.5, 1.5), per_channel=0.5)),
-        iaa.Sometimes(0.2, iaa.JpegCompression(compression=(70, 99))),
-        iaa.Sometimes(0.2, iaa.GaussianBlur(sigma=(0, 3.0))),
-        iaa.Sometimes(0.2, iaa.MotionBlur(k=15, angle=[-45, 45])),
+        # iaa.Sometimes(0.2, iaa.JpegCompression(compression=(70, 99))),
+        iaa.Sometimes(0.2, iaa.GaussianBlur(sigma=(0.05, 0.2))),
+        # iaa.Sometimes(0.2, iaa.MotionBlur(k=15, angle=[-45, 45])),
         iaa.Sometimes(0.2, iaa.MultiplyHue((0.5, 1.5))),
         iaa.Sometimes(0.2, iaa.MultiplySaturation((0.5, 1.5))),
         iaa.Sometimes(0.34, iaa.MultiplyHueAndSaturation((0.5, 1.5),
                                                          per_channel=True)),
-        iaa.Sometimes(0.34, iaa.Grayscale(alpha=(0.0, 1.0))),
+        # iaa.Sometimes(0.34, iaa.Grayscale(alpha=(0.0, 1.0))),
         iaa.Sometimes(0.2, iaa.ChangeColorTemperature((1100, 10000))),
         iaa.Sometimes(0.1, iaa.GammaContrast((0.5, 2.0))),
         iaa.Sometimes(0.2, iaa.SigmoidContrast(gain=(3, 10),
                                                cutoff=(0.4, 0.6))),
-        iaa.Sometimes(0.1, iaa.CLAHE()),
-        iaa.Sometimes(0.1, iaa.HistogramEqualization()),
+        # iaa.Sometimes(0.1, iaa.CLAHE()),
+        # iaa.Sometimes(0.1, iaa.HistogramEqualization()),
         iaa.Sometimes(0.2, iaa.LinearContrast((0.5, 2.0), per_channel=0.5)),
-        iaa.Sometimes(0.1, iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)))
+        # iaa.Sometimes(0.1, iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)))
     ]) 
 def _load_aug_ex1_img_aug():
     return iaa.Sequential([
@@ -152,12 +152,14 @@ def process_dataset_augmentations(
         segmap = SegmentationMapsOnImage(mask, shape=img.shape)
 
         # save augmented images 
-        if aug == '1':
+        if aug == 1:
             seq = _load_aug_ex1_img_aug()
-        elif aug == '2':
+        elif aug == 2:
             seq = _load_aug_ex2_img_aug()
-        elif aug == '3':
+        elif aug == 3:
             seq = _load_augmentation_aug_non_geometric()
+        else:
+            raise ValueError(f'Augmentation arrangemente: {aug} not defined.')
         
         images_aug = []
         segmaps_aug = []
@@ -242,7 +244,7 @@ if __name__ == '__main__':
     paths = os.listdir(split_dir)
     for i in range(len(paths)):
         process_dataset_augmentations(
-            aug=3,
+            aug=1,
             split_path=splits[i],
             save_aug_img_location=parent_dir + '/saves/augd_images/',
             save_aug_ann_location=parent_dir + '/saves/augd_masks/',

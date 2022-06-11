@@ -15,8 +15,67 @@ import numpy as np
 from imgaug.augmentables.segmaps import SegmentationMapsOnImage
 from tqdm import tqdm
 
+def _load_augmentation_aug_non_geometric():
+    """
+    
+    """
+    return iaa.Sequential([
+        iaa.Sometimes(0.3, iaa.Multiply((0.5, 1.5), per_channel=0.5)),
+        # iaa.Sometimes(0.2, iaa.JpegCompression(compression=(70, 99))),
+        iaa.Sometimes(0.2, iaa.GaussianBlur(sigma=(0.05, 0.2))),
+        # iaa.Sometimes(0.2, iaa.MotionBlur(k=15, angle=[-45, 45])),
+        iaa.Sometimes(0.2, iaa.MultiplyHue((0.5, 1.5))),
+        iaa.Sometimes(0.2, iaa.MultiplySaturation((0.5, 1.5))),
+        iaa.Sometimes(0.34, iaa.MultiplyHueAndSaturation((0.5, 1.5),
+                                                         per_channel=True)),
+        # iaa.Sometimes(0.34, iaa.Grayscale(alpha=(0.0, 1.0))),
+        iaa.Sometimes(0.2, iaa.ChangeColorTemperature((1100, 10000))),
+        iaa.Sometimes(0.1, iaa.GammaContrast((0.5, 2.0))),
+        iaa.Sometimes(0.2, iaa.SigmoidContrast(gain=(3, 10),
+                                               cutoff=(0.4, 0.6))),
+        # iaa.Sometimes(0.1, iaa.CLAHE()),
+        # iaa.Sometimes(0.1, iaa.HistogramEqualization()),
+        iaa.Sometimes(0.2, iaa.LinearContrast((0.5, 2.0), per_channel=0.5)),
+        # iaa.Sometimes(0.1, iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)))
+    ]) 
+def _load_aug_ex1_img_aug():
+    return iaa.Sequential([
+            iaa.Dropout([0.05, 0.2]),      # drop 5% or 20% of all pixels
+            iaa.Sharpen((0.0, 1.0)),       # sharpen the image
+            iaa.Affine(rotate=(-45, 45)),  # rotate by -45 to 45 degrees (affects segmaps)
+            # iaa.ElasticTransformation(alpha=50, sigma=5)  # apply water effect (affects segmaps)
+            iaa.GaussianBlur(sigma=(0, 3.0))
+        ], random_order=True)
+
+def _load_aug_ex2_img_aug():
+    return iaa.Sequential([
+            # Small gaussian blur with random sigma between 0 and 0.5.
+            # But we only blur about 80% of all images.
+            iaa.Dropout([0.05, 0.2]),  
+            iaa.Sometimes(
+                0.8,
+                iaa.GaussianBlur(sigma=(0, 0.5))
+            ),
+            # Strengthen or weaken the contrast in each image.
+            iaa.LinearContrast((0.75, 1.5)),
+            # Add gaussian noise.
+            # For 50% of all images, we sample the noise once per pixel.
+            # For the other 50% of all images, we sample the noise per pixel AND
+            # channel. This can change the color (not only brightness) of the
+            # pixels.
+            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
+            # Make some images brighter and some darker.
+            # In 50% of all cases, we sample the multiplier once per channel,
+            # which can end up changing the color of the images.
+            iaa.Multiply((0.8, 1.2), per_channel=0.5),
+            # flip horizontally 50% prob
+            iaa.Fliplr(0.5),
+            # flip vertically 50% prob
+            iaa.Flipud(0.5),
+        ], random_order=True) # apply augmenters in random order
 
 def process_dataset_augmentations(
+    aug,
     split_path='/home/john/Documents/Datasets/master_polyp/splits/train.txt',        
     save_aug_img_location = "/home/john/Documents/Datasets/master_polyp_t/AugmentedTrainDataset",     
     save_aug_ann_location = "/home/john/Documents/Datasets/master_polyp_t/AugmentedTrainDataset",
@@ -95,31 +154,14 @@ def process_dataset_augmentations(
         segmap = SegmentationMapsOnImage(mask, shape=img.shape)
 
         # save augmented images 
-        seq = iaa.Sequential([
-            # Small gaussian blur with random sigma between 0 and 0.5.
-            # But we only blur about 80% of all images.
-            iaa.Dropout([0.05, 0.2]),  
-            iaa.Sometimes(
-                0.8,
-                iaa.GaussianBlur(sigma=(0, 0.5))
-            ),
-            # Strengthen or weaken the contrast in each image.
-            iaa.LinearContrast((0.75, 1.5)),
-            # Add gaussian noise.
-            # For 50% of all images, we sample the noise once per pixel.
-            # For the other 50% of all images, we sample the noise per pixel AND
-            # channel. This can change the color (not only brightness) of the
-            # pixels.
-            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
-            # Make some images brighter and some darker.
-            # In 50% of all cases, we sample the multiplier once per channel,
-            # which can end up changing the color of the images.
-            iaa.Multiply((0.8, 1.2), per_channel=0.5),
-            # flip horizontally 50% prob
-            iaa.Fliplr(0.5),
-            # flip vertically 50% prob
-            iaa.Flipud(0.5),
-        ], random_order=True) # apply augmenters in random order
+        if aug == 1:
+            seq = _load_aug_ex1_img_aug()
+        elif aug == 2:
+            seq = _load_aug_ex2_img_aug()
+        elif aug == 3:
+            seq = _load_augmentation_aug_non_geometric()
+        else:
+            raise ValueError(f'Augmentation arrangemente: {aug} not defined.')
         
         images_aug = []
         segmaps_aug = []
@@ -453,49 +495,23 @@ if __name__ == '__main__':
 
         split_paths = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ClinicDB_test.txt',  
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/Kvasir_test.txt', 
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/train.txt'
         ]
         src_img_dirs = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ClinicDB/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/images/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TrainDataset/image/'
         ]
         src_ann_dirs = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ClinicDB/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/Kvasir/masks/',
-            '/home/lewisj34_local/Dev/Datasets/master_polyp/TrainDataset/mask/'
         ]
 
     if merged == True:
         createAndPopulateDirs(
+            aug=3,
             merged=True,
             master_original_dir=merge_src_dir,
             parent_save_dir=merge_parent_save_dir,
@@ -505,6 +521,7 @@ if __name__ == '__main__':
         )
     else:
         createAndPopulateDirs(
+            aug=3,
             merged=False,
             master_original_dir=master_train_src_dir,
             parent_save_dir=master_parent_save_dir,

@@ -36,8 +36,16 @@ def _load_augmentation_aug_non_geometric():
         iaa.Sometimes(0.2, iaa.LinearContrast((0.5, 2.0), per_channel=0.5)),
         iaa.Sometimes(0.1, iaa.Emboss(alpha=(0, 1.0), strength=(0, 2.0)))
     ]) 
+def _load_aug_ex1_img_aug():
+    return iaa.Sequential([
+            iaa.Dropout([0.05, 0.2]),      # drop 5% or 20% of all pixels
+            iaa.Sharpen((0.0, 1.0)),       # sharpen the image
+            iaa.Affine(rotate=(-45, 45)),  # rotate by -45 to 45 degrees (affects segmaps)
+            # iaa.ElasticTransformation(alpha=50, sigma=5)  # apply water effect (affects segmaps)
+            iaa.GaussianBlur(sigma=(0, 3.0))
+        ], random_order=True)
+
 def _load_aug_ex2_img_aug():
-            # save augmented images 
     return iaa.Sequential([
             # Small gaussian blur with random sigma between 0 and 0.5.
             # But we only blur about 80% of all images.
@@ -65,6 +73,7 @@ def _load_aug_ex2_img_aug():
         ], random_order=True) # apply augmenters in random order
 
 def process_dataset_augmentations(
+    aug,
     split_path='/home/john/Documents/Datasets/master_polyp/splits/train.txt',        
     save_aug_img_location = "/home/john/Documents/Datasets/master_polyp_t/AugmentedTrainDataset",     
     save_aug_ann_location = "/home/john/Documents/Datasets/master_polyp_t/AugmentedTrainDataset",
@@ -143,31 +152,12 @@ def process_dataset_augmentations(
         segmap = SegmentationMapsOnImage(mask, shape=img.shape)
 
         # save augmented images 
-        seq = iaa.Sequential([
-            # Small gaussian blur with random sigma between 0 and 0.5.
-            # But we only blur about 80% of all images.
-            iaa.Dropout([0.05, 0.2]),  
-            iaa.Sometimes(
-                0.8,
-                iaa.GaussianBlur(sigma=(0, 0.5))
-            ),
-            # Strengthen or weaken the contrast in each image.
-            iaa.LinearContrast((0.75, 1.5)),
-            # Add gaussian noise.
-            # For 50% of all images, we sample the noise once per pixel.
-            # For the other 50% of all images, we sample the noise per pixel AND
-            # channel. This can change the color (not only brightness) of the
-            # pixels.
-            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
-            # Make some images brighter and some darker.
-            # In 50% of all cases, we sample the multiplier once per channel,
-            # which can end up changing the color of the images.
-            iaa.Multiply((0.8, 1.2), per_channel=0.5),
-            # flip horizontally 50% prob
-            iaa.Fliplr(0.5),
-            # flip vertically 50% prob
-            iaa.Flipud(0.5),
-        ], random_order=True) # apply augmenters in random order
+        if aug == '1':
+            seq = _load_aug_ex1_img_aug()
+        elif aug == '2':
+            seq = _load_aug_ex2_img_aug()
+        elif aug == '3':
+            seq = _load_augmentation_aug_non_geometric()
         
         images_aug = []
         segmaps_aug = []
@@ -222,36 +212,37 @@ if __name__ == '__main__':
 
     splits = [
         '/home/john/Documents/Datasets/master_polyp_mini/splits/CVC_300_test.txt',
-        '/home/john/Documents/Datasets/master_polyp_mini/splits/CVC_ClinicDB_test.txt',
-        '/home/john/Documents/Datasets/master_polyp_mini/splits/CVC_ColonDB_test.txt',
-        '/home/john/Documents/Datasets/master_polyp_mini/splits/ETIS_test.txt',
-        '/home/john/Documents/Datasets/master_polyp_mini/splits/Kvasir_test.txt',
-        '/home/john/Documents/Datasets/master_polyp_mini/splits/train.txt',
-        '/home/john/Documents/Datasets/master_polyp_mini/splits/valid.txt',
+        # '/home/john/Documents/Datasets/master_polyp_mini/splits/CVC_ClinicDB_test.txt',
+        # '/home/john/Documents/Datasets/master_polyp_mini/splits/CVC_ColonDB_test.txt',
+        # '/home/john/Documents/Datasets/master_polyp_mini/splits/ETIS_test.txt',
+        # '/home/john/Documents/Datasets/master_polyp_mini/splits/Kvasir_test.txt',
+        # '/home/john/Documents/Datasets/master_polyp_mini/splits/train.txt',
+        # '/home/john/Documents/Datasets/master_polyp_mini/splits/valid.txt',
     ]
     img_dirs = [
         '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-300/images/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ClinicDB/images/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ColonDB/images/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/ETIS-LaribPolypDB/images/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/Kvasir/images/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/image/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/mask/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ClinicDB/images/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ColonDB/images/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/ETIS-LaribPolypDB/images/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/Kvasir/images/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/image/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/mask/',
     ]
     ann_dirs = [
         '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-300/masks/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ClinicDB/masks/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ColonDB/masks/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/ETIS-LaribPolypDB/masks/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/Kvasir/masks/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/image/',
-        '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/mask/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ClinicDB/masks/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/CVC-ColonDB/masks/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/ETIS-LaribPolypDB/masks/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TestDataset/Kvasir/masks/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/image/',
+        # '/home/john/Documents/Datasets/master_polyp_mini/TrainDataset/mask/',
     ]
 
     # what we're going to do, 
     paths = os.listdir(split_dir)
     for i in range(len(paths)):
         process_dataset_augmentations(
+            aug=3,
             split_path=splits[i],
             save_aug_img_location=parent_dir + '/saves/augd_images/',
             save_aug_ann_location=parent_dir + '/saves/augd_masks/',

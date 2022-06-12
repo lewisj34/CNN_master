@@ -298,6 +298,7 @@ def checkUniqueGetUniqueDir(parent_save_dir: str) -> str:
         return curr_save_dir
 
 def createAndPopulateDirs(
+    aug: int,
     merged: bool,
     master_original_dir: str,
     parent_save_dir: str,
@@ -364,6 +365,7 @@ def createAndPopulateDirs(
 
         for i in range((num_datasets_to_add)):
             process_dataset_augmentations(
+                aug=aug,
                 split_path = split_paths[i],
                 save_aug_img_location=dst_img_dir,
                 save_aug_ann_location=dst_ann_dir,
@@ -430,6 +432,7 @@ def createAndPopulateDirs(
 
         for i in range((num_datasets_to_add)):
             process_dataset_augmentations(
+                aug=aug,
                 split_path = split_paths[i],
                 save_aug_img_location=dst_img_dir,
                 save_aug_ann_location=dst_ann_dir,

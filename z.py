@@ -74,6 +74,20 @@ def _load_aug_ex2_img_aug():
             iaa.Flipud(0.5),
         ], random_order=True) # apply augmenters in random order
 
+def _load_aug_ex3_img_aug():
+    """
+    sharpens and increases redness
+    """
+    return iaa.Sequential([
+        iaa.pillike.EnhanceColor(),
+        iaa.Sharpen(alpha=(0.8, 0.9), lightness=(0.75, 1.25)),
+        iaa.GaussianBlur(sigma=(0, 0.5)),
+        iaa.WithChannels(0, iaa.Add((2, 4))),
+        iaa.ChangeColorTemperature((1100, 10000)),
+        iaa.Fliplr(0.8),
+        iaa.Flipud(0.8)
+    ])
+
 def process_dataset_augmentations(
     aug,
     split_path='/home/john/Documents/Datasets/master_polyp/splits/train.txt',        
@@ -160,6 +174,8 @@ def process_dataset_augmentations(
             seq = _load_aug_ex2_img_aug()
         elif aug == 3:
             seq = _load_augmentation_aug_non_geometric()
+        elif aug == 4:
+            seq = _load_aug_ex3_img_aug()
         else:
             raise ValueError(f'Augmentation arrangemente: {aug} not defined.')
         
@@ -500,21 +516,24 @@ if __name__ == '__main__':
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_300_test.txt',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/CVC_ColonDB_test.txt',  
             '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/ETIS_test.txt',  
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/splits/train.txt',  
         ]
         src_img_dirs = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/images/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/images/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TrainDataset/image/',
         ]
         src_ann_dirs = [
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-300/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/CVC-ColonDB/masks/',
             '/home/lewisj34_local/Dev/Datasets/master_polyp/TestDataset/ETIS-LaribPolypDB/masks/',
+            '/home/lewisj34_local/Dev/Datasets/master_polyp/TrainDataset/mask/',
         ]
 
     if merged == True:
         createAndPopulateDirs(
-            aug=3,
+            aug=4,
             merged=True,
             master_original_dir=merge_src_dir,
             parent_save_dir=merge_parent_save_dir,
@@ -524,7 +543,7 @@ if __name__ == '__main__':
         )
     else:
         createAndPopulateDirs(
-            aug=3,
+            aug=4,
             merged=False,
             master_original_dir=master_train_src_dir,
             parent_save_dir=master_parent_save_dir,

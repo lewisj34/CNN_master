@@ -58,8 +58,8 @@ def force_cudnn_initialization():
 @click.option('--decoder', type=str, default='linear')
 @click.option('--cnn_model_name', type=str, default='unet')
 @click.option('--cnn_backbone', type=str, default='resnet18')
-@click.option('--image_height', type=int, default=256)
-@click.option('--image_width', type=int, default=256)
+@click.option('--image_height', type=int, default=512)
+@click.option('--image_width', type=int, default=512)
 @click.option('--crop_height', type=int, default=None)
 @click.option('--crop_width', type=int, default=None)
 @click.option('--reimport_data', type=bool, default=False)
@@ -729,9 +729,6 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
-        x = torch.randn((batch_size, 3, image_height, image_width), device="cuda")
-        y = model(x)
-        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

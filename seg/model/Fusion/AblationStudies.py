@@ -30,12 +30,12 @@ class NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoPSEnc(nn.Mod
             attention=True,
         )
         # now populate dimensions 
-        self.cnn_branch.get_dimensionsNoPSEncoder(
-            N_in = cnn_model_cfg['batch_size'],
-            C_in = trans_model_cfg['num_output_trans'],
-            H_in = cnn_model_cfg['image_size'][0], 
-            W_in = cnn_model_cfg['image_size'][1]
-        )
+        # self.cnn_branch.get_dimensionsNoPSEncoder(
+        #     N_in = cnn_model_cfg['batch_size'],
+        #     C_in = trans_model_cfg['num_output_trans'],
+        #     H_in = cnn_model_cfg['image_size'][0], 
+        #     W_in = cnn_model_cfg['image_size'][1]
+        # )
 
         print(f'Warning in file: {__file__}, we are manually assigning the \
 decoder to have a `linear` value in create_transformer when creating the \
@@ -56,18 +56,18 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
             self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
                 64, num_output_trans, 64, 1, stage = '1_2')
             self.fuse_1_4 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+                128, num_output_trans, 64, 1, stage='1_4')
             self.fuse_1_8 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+                256, num_output_trans, 64, 1, stage='1_8')
             self.fuse_1_16 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+                64, num_output_trans, 64, 1, stage='1_16')
             if self.patch_size == 32:
                 self.fuse_1_32 = MiniEncoderFuseDWSep(
                     self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')
 
     def forward(self, images):
-        x_final_cnn = self.cnn_branch(images)
-        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+        x_final_trans = self.trans_branch(images) 
+        x_final_cnn = self.cnn_branch(self.trans_branch.x_1_16)
 
         '''
         self.CNN_BRANCH and self.TRANSFORMER_BRANCH should have same members:

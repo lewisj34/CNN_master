@@ -729,6 +729,15 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
+    elif model_name == "noTransEnc":
+        from seg.model.Fusion.AblationStudies import NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoTransEnc
+        model = NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoTransEnc(
+            cnn_model_cfg,
+            trans_model_cfg,
+        )
+        # x = torch.randn((batch_size, 3, image_height, image_width))
+        # y = model(x)
+        # exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

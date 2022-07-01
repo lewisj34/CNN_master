@@ -1377,7 +1377,7 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
                 tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
 
-# NOT COMPLETED YET .
+# BEST RESULTS -> in results/DataParallel/DataParallel_11/current_checkpoints/DataParallel-218.pth on dlearn6
 class NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModule(nn.Module):
     def __init__(
         self, 

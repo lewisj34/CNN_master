@@ -723,6 +723,15 @@ def main(
         x = torch.randn((batch_size, 3, image_height, image_width), device="cuda")
         y = model(x)
         exit(1)
+    elif model_name == "noPSenc":
+        from seg.model.Fusion.AblationStudies import NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoPSEnc
+        model = NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoPSEnc(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+        x = torch.randn((batch_size, 3, image_height, image_width), device="cuda")
+        y = model(x)
+        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

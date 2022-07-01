@@ -375,7 +375,7 @@ class zedNetDWSepWithCCM(nn.Module):
                 print(f'self.x_1_32.shape: {self.x_1_32.shape}')
         del dummy_tensor
 
-# NOT COMPLETED YET . 
+# BEST RESULTS -> in results/DataParallel/DataParallel_11/current_checkpoints/DataParallel-218.pth on dlearn6
 class zedNetDWSepWithCCMinAllOfIt(nn.Module):
     def __init__(
         self,

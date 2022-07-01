@@ -717,6 +717,12 @@ def main(
             aggregate_patch_size=16,
             divide_by_sum=True,
         ).cuda()
+    elif model_name == "transformerV2":
+        from seg.model.transformer.create_modelV2 import create_transformerV2
+        model = create_transformerV2(trans_model_cfg, decoder='linear').cuda()
+        x = torch.randn((batch_size, 3, image_height, image_width), device="cuda")
+        y = model(x)
+        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

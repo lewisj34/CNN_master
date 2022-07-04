@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F 
 
 from seg.model.zed.AblationStudiesZedNet import zedNetDWSepWithCCMinAllOfItNoPSEncoder
-from seg.model.zed.zedNet import zedNetDWSepWithCCMinAllOfIt
+from seg.model.zed.zedNet import zedNetDWSepWithCCMinAllOfIt, zedNetDWSep
 from seg.model.transformer.create_modelV2 import create_transformerV2
 from seg.model.transformer.create_modelAblation import create_transformerNoTransEncoder
 from .fuse import MiniEncoderFuseDWSep
@@ -175,3 +175,81 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
                 x_1_32 = self.fuse_1_32(self.cnn_branch.x_1_32, self.trans_branch.x_1_32)
                 tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
+
+class NewZedFusionNOMERGER(nn.Module):
+    def __init__(
+        self, 
+        cnn_model_cfg,
+        trans_model_cfg,
+        ):
+        super(NewZedFusionNOMERGER, self).__init__()
+
+        self.patch_size = cnn_model_cfg['patch_size']
+        assert cnn_model_cfg['patch_size'] == trans_model_cfg['patch_size'], \
+            'patch_size not configd properly, model_cfgs have different values'
+        assert self.patch_size == 16 or self.patch_size == 32, \
+            'patch_size must be {16, 32}'
+
+        self.cnn_branch = zedNetDWSepWithCCMinAllOfIt(
+            n_channels=cnn_model_cfg['in_channels'],
+            n_classes=cnn_model_cfg['num_classes'],
+            patch_size=cnn_model_cfg['patch_size'],
+            bilinear=True,
+            attention=True,
+        )
+
+        trans_model_cfg['num_output_trans'] = 1 
+        num_output_trans = trans_model_cfg["num_output_trans"]
+        print(f'autoupdating num_output_trans back to 1 for ablation study: {num_output_trans}')
+
+        self.trans_branch = create_transformerV2(trans_model_cfg, 
+            decoder='linear')
+
+
+    def forward(self, images):
+        x_final_cnn = self.cnn_branch(images)
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+
+        tensor_list = [x_final_cnn, x_final_trans]
+        mean = torch.mean(torch.stack(tensor_list), dim=0) 
+        return mean
+
+class NewZedFusionNOMERGERNoCCM(nn.Module):
+    def __init__(
+        self, 
+        cnn_model_cfg,
+        trans_model_cfg,
+        ):
+        super(NewZedFusionNOMERGERNoCCM, self).__init__()
+
+        self.patch_size = cnn_model_cfg['patch_size']
+        assert cnn_model_cfg['patch_size'] == trans_model_cfg['patch_size'], \
+            'patch_size not configd properly, model_cfgs have different values'
+        assert self.patch_size == 16 or self.patch_size == 32, \
+            'patch_size must be {16, 32}'
+
+        self.cnn_branch = zedNetDWSepWithCCMinAllOfIt(
+            n_channels=cnn_model_cfg['in_channels'],
+            n_classes=cnn_model_cfg['num_classes'],
+            patch_size=cnn_model_cfg['patch_size'],
+            bilinear=True,
+            attention=True,
+        )
+
+        trans_model_cfg['num_output_trans'] = 1 
+        num_output_trans = trans_model_cfg["num_output_trans"]
+        print(f'autoupdating num_output_trans back to 1 for ablation study: {num_output_trans}')
+
+
+        self.trans_branch = create_transformerV2(trans_model_cfg, 
+            decoder='linear')
+        
+
+
+    def forward(self, images):
+        x_final_cnn = self.cnn_branch(images)
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+
+        tensor_list = [x_final_cnn, x_final_trans]
+        mean = torch.mean(torch.stack(tensor_list), dim=0) 
+        return mean

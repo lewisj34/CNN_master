@@ -738,6 +738,18 @@ def main(
         # x = torch.randn((batch_size, 3, image_height, image_width))
         # y = model(x)
         # exit(1)
+    elif model_name == "no_merger":
+        from seg.model.Fusion.AblationStudies import NewZedFusionNOMERGER
+        model = NewZedFusionNOMERGER(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+    elif model_name == "no_merger_no_ccm":
+        from seg.model.Fusion.AblationStudies import NewZedFusionNOMERGERNoCCM
+        model = NewZedFusionNOMERGERNoCCM(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

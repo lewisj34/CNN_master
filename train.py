@@ -750,6 +750,25 @@ def main(
             cnn_model_cfg,
             trans_model_cfg,
         ).cuda()
+    elif model_name == "create_transformerNoTransDecoder":
+        from seg.model.transformer.AblationStudiesTrans import create_transformerNoTransDecoder
+        model = create_transformerNoTransDecoder(trans_model_cfg, decoder='linear').cuda()
+        x = torch.randn((batch_size, 3, image_height, image_width), device='cuda')
+        y = model(x)
+        print(f'y.shape: {y.shape}')
+        exit(1)
+    elif model_name == "no_decoders":
+        from seg.model.Fusion.AblationStudies import NewZedFusionWithMergersButNoDecoders
+        model = NewZedFusionWithMergersButNoDecoders(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
+    elif model_name == "no_decoders_no_mergers":
+        from seg.model.Fusion.AblationStudies import NewZedFusionNoDecodersNoMergers
+        model = NewZedFusionNoDecodersNoMergers(
+            cnn_model_cfg,
+            trans_model_cfg,
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

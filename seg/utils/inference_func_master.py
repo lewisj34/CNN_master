@@ -101,7 +101,7 @@ def inference_master(
         @test_type: str denoting whether we're working with test or valid set 
     '''
 
-    test_types = ['valid', 'validation', 'test', 'testing']
+    test_types = ['valid', 'validation', 'test', 'testing', 'train', 'training']
     assert test_type in test_types, f'{test_type} invalid. Options: {test_types}'
 
     if test_type == 'valid' or test_type == 'validation':
@@ -114,6 +114,16 @@ def inference_master(
             loss_fn=loss_fn
         )
         return meanValidLoss, meanValidIoU, meanValidDice 
+    elif test_type == 'train' or test_type == 'training':
+        print("\nTraining Dataset Statistics: \n")
+        logging.info("\nTraining Dataset Statistics: \n")
+        meanTrainLoss, meanTrainIoU, meanTrainDice = metric_reporter_general(
+            model=model,
+            loader=loader,
+            inferencer=inferencer,
+            loss_fn=loss_fn
+        )
+        return meanTrainLoss, meanTrainIoU, meanTrainDice 
     else:
         test_cls = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
 

@@ -270,6 +270,7 @@ def train_one_epochV2(
             if num_classes == 1:
                 meanValidLoss, meanValidIoU, meanValidDice  = inference(model, valid_loader, inferencer, loss_fn, 'valid')
                 meanTestLoss, meanTestIoU, meanTestDice = inference(model, test_loader, inferencer, loss_fn, 'test')
+                meanTrainLoss, meanTrainIoU, meanTrainDice = inference(model, train_loader, inferencer, loss_fn, 'train')
             elif num_classes == 2:
                 meanValidLoss, meanValidIoU, meanValidDice  = inference_multi_class(model, valid_loader, inferencer, loss_fn, 'valid')
                 meanTestLoss, meanTestIoU, meanTestDice = inference_multi_class(model, test_loader, inferencer, loss_fn, 'test')         
@@ -319,11 +320,20 @@ def train_one_epochV2(
                 if curr_epoch == 5:
                     exit(1)
 
-        return best_loss, meanTestLoss.item(), meanTestIoU.item(), meanTestDice.item(), meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
+        return best_loss, meanTestLoss.item(), meanTestIoU.item(), meanTestDice.item(), \
+            meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item(), \
+                meanTrainLoss.item(), meanTrainIoU.item(), meanTrainDice.item()
 
     else: # dataset == master 
         if (curr_epoch+1) % 1 == 0:
             assert num_classes == 1, f'num_classes: 2 not supported for master set'
+            meanTrainLoss, meanTrainIoU, meanTrainDice = inference_master(
+                model=model,
+                loader=train_loader,
+                inferencer=inferencer,
+                loss_fn=loss_fn,
+                test_type='train',
+            )
             meanValidLoss, meanValidIoU, meanValidDice = inference_master(
                 model=model,
                 loader=valid_loader,
@@ -377,6 +387,8 @@ def train_one_epochV2(
                 if curr_epoch == 5:
                     exit(1)
 
-        return best_loss, test_loss_matrix, meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item()
+        return best_loss, test_loss_matrix, \
+            meanValidLoss.item(), meanValidIoU.item(), meanValidDice.item(), \
+                meanTrainLoss.item(), meanTrainIoU.item(), meanTrainDice.item()
 
 

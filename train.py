@@ -720,9 +720,9 @@ def main(
     elif model_name == "transformerV2":
         from seg.model.transformer.create_modelV2 import create_transformerV2
         model = create_transformerV2(trans_model_cfg, decoder='linear').cuda()
-        x = torch.randn((batch_size, 3, image_height, image_width), device="cuda")
-        y = model(x)
-        exit(1)
+        # x = torch.randn((batch_size, 3, image_height, image_width), device="cuda")
+        # y = model(x)
+        # exit(1)
     elif model_name == "noPSenc":
         from seg.model.Fusion.AblationStudies import NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoPSEnc
         model = NewZedFusionNetworkDWSepWithCCMinDWModuleInEveryUpDownModuleNoPSEnc(
@@ -906,6 +906,9 @@ def main(
         valid_loss_list = list()
         valid_iou_list = list()
         valid_dice_list = list()
+        train_loss_list = list()
+        train_iou_list = list()
+        train_dice_list = list()
     else: # test_cls = ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
         test_CVC_300_loss_list = list()
         test_CVC_300_iou_list = list()
@@ -925,6 +928,9 @@ def main(
         valid_loss_list = list()
         valid_iou_list = list()
         valid_dice_list = list()
+        train_loss_list = list()
+        train_iou_list = list()
+        train_dice_list = list()
 
     valid_loader = get_tDataset(
         image_root = save_dir + "/data_valid.npy",
@@ -991,7 +997,8 @@ def main(
         for epoch in range(start_epoch, num_epochs + 1): 
             start = time.time()
             best_loss, meanTestLoss, meanTestIoU, meanTestDice, \
-                meanValidLoss, meanValidIoU, meanValidDice = train_one_epochV2(
+                meanValidLoss, meanValidIoU, meanValidDice, \
+                    meanTrainLoss, meanTrainIoU, meanTrainDice = train_one_epochV2(
                 curr_epoch = epoch, 
                 total_epochs = num_epochs,
                 train_loader = train_loader, 
@@ -1019,6 +1026,9 @@ def main(
             valid_loss_list.append(meanValidLoss)
             valid_iou_list.append(meanValidIoU)
             valid_dice_list.append(meanValidDice)
+            train_loss_list.append(meanTrainLoss)
+            train_iou_list.append(meanTrainIoU)
+            train_dice_list.append(meanTrainDice)
             end = time.time()
             print('Time per epoch: {:.4f} (s)\n'.format(end - start))
             logging.info('Time per epoch: {:.4f} (s)\n'.format(end - start))        
@@ -1033,7 +1043,8 @@ def main(
         for epoch in range(start_epoch, num_epochs + 1): 
             start = time.time()
             best_loss, test_loss_matrix, \
-                meanValidLoss, meanValidIoU, meanValidDice = train_one_epochV2(
+                meanValidLoss, meanValidIoU, meanValidDice, \
+                    meanTrainLoss, meanTrainIoU, meanTrainDice = train_one_epochV2(
                 curr_epoch = epoch, 
                 total_epochs = num_epochs,
                 train_loader = train_loader, 
@@ -1073,6 +1084,9 @@ def main(
             valid_loss_list.append(meanValidLoss)
             valid_iou_list.append(meanValidIoU)
             valid_dice_list.append(meanValidDice)
+            train_loss_list.append(meanTrainLoss)
+            train_iou_list.append(meanTrainIoU)
+            train_dice_list.append(meanTrainDice)
             end = time.time()
             print('Time per epoch: {:.4f} (s)\n'.format(end - start))    
             logging.info('Time per epoch: {:.4f} (s)\n'.format(end - start)) 
@@ -1082,6 +1096,7 @@ def main(
         plot_test_valid_loss(
             test_loss_list, 
             valid_loss_list, 
+            train_loss_list,
             num_epochs - start_epoch + 1,
             save_dir = model_dir,
         )
@@ -1093,6 +1108,9 @@ def main(
         valid_loss_file = open(f'{model_dir}/valid_loss_file.txt', 'w')
         valid_iou_file = open(f'{model_dir}/valid_iou_file.txt', 'w')
         valid_dice_file = open(f'{model_dir}/valid_dice_file.txt', 'w')
+        train_loss_file = open(f'{model_dir}/train_loss_file.txt', 'w')
+        train_iou_file = open(f'{model_dir}/train_iou_file.txt', 'w')
+        train_dice_file = open(f'{model_dir}/train_dice_file.txt', 'w')
 
         for i in range(len(test_loss_list)):
             test_loss_file.write(str(test_loss_list[i]) + '\n')
@@ -1101,6 +1119,9 @@ def main(
             valid_loss_file.write(str(valid_loss_list[i]) + '\n')
             valid_iou_file.write(str(valid_iou_list[i]) + '\n')
             valid_dice_file.write(str(valid_dice_list[i]) + '\n')
+            train_loss_file.write(str(train_loss_list[i]) + '\n')
+            train_iou_file.write(str(train_iou_list[i]) + '\n')
+            train_dice_file.write(str(train_dice_list[i]) + '\n')
 
         test_loss_file.close()
         test_iou_file.close()
@@ -1108,6 +1129,9 @@ def main(
         valid_loss_file.close()
         valid_iou_file.close()
         valid_dice_file.close()
+        train_loss_file.close()
+        train_iou_file.close()
+        train_dice_file.close()
 
         # visualization of output seg. map (w/ input image and ground truth)
         image_root = save_dir + "/data_test.npy"
@@ -1122,6 +1146,7 @@ def main(
         plot_test_valid_loss(
             test_CVC_300_loss_list, 
             valid_loss_list, 
+            train_loss_list,
             num_epochs - start_epoch + 1,
             save_dir = model_dir,
             title='Loss Curve: CVC 300',
@@ -1130,6 +1155,7 @@ def main(
         plot_test_valid_loss(
             test_CVC_ClinicDB_loss_list, 
             valid_loss_list, 
+            train_loss_list,
             num_epochs - start_epoch + 1,
             save_dir = model_dir,
             title='Loss Curve: CVC ClinicDB',
@@ -1138,6 +1164,7 @@ def main(
         plot_test_valid_loss(
             test_CVC_ColonDB_loss_list, 
             valid_loss_list, 
+            train_loss_list,
             num_epochs - start_epoch + 1,
             save_dir = model_dir,
             title='Loss Curve: CVC ColonDB',
@@ -1146,6 +1173,7 @@ def main(
         plot_test_valid_loss(
             test_ETIS_loss_list, 
             valid_loss_list, 
+            train_loss_list,
             num_epochs - start_epoch + 1,
             save_dir = model_dir,
             title='Loss Curve: ETIS',
@@ -1154,6 +1182,7 @@ def main(
         plot_test_valid_loss(
             test_Kvasir_loss_list, 
             valid_loss_list, 
+            train_loss_list,
             num_epochs - start_epoch + 1,
             save_dir = model_dir,
             title='Loss Curve: Kvasir',
@@ -1181,6 +1210,10 @@ def main(
         valid_iou_file = open(f'{model_dir}/valid_iou_file.txt', 'w')
         valid_dice_file = open(f'{model_dir}/valid_dice_file.txt', 'w')
 
+        train_loss_file = open(f'{model_dir}/train_loss_file.txt', 'w')
+        train_iou_file = open(f'{model_dir}/train_iou_file.txt', 'w')
+        train_dice_file = open(f'{model_dir}/train_dice_file.txt', 'w')
+
         for i in range(len(test_CVC_300_loss_list)):
             test_CVC_300_loss_file.write(str(test_CVC_300_loss_list[i]) + '\n')
             test_CVC_300_iou_file.write(str(test_CVC_300_iou_list[i]) + '\n')
@@ -1205,6 +1238,10 @@ def main(
             valid_loss_file.write(str(valid_loss_list[i]) + '\n')
             valid_iou_file.write(str(valid_iou_list[i]) + '\n')
             valid_dice_file.write(str(valid_dice_list[i]) + '\n')
+        for i in range(len(train_loss_list)):
+            train_loss_file.write(str(train_loss_list[i]) + '\n')
+            train_iou_file.write(str(train_iou_list[i]) + '\n')
+            train_dice_file.write(str(train_dice_list[i]) + '\n')
 
         test_CVC_300_loss_file.close()
         test_CVC_300_iou_file.close()
@@ -1225,6 +1262,10 @@ def main(
         valid_loss_file.close()
         valid_iou_file.close()
         valid_dice_file.close()
+
+        train_loss_file.close()
+        train_iou_file.close()
+        train_dice_file.close()
 
         # visualization of output seg. map (w/ input image and ground truth)
         CVC_300_image_root = save_dir + "/data_CVC_300_test.npy"

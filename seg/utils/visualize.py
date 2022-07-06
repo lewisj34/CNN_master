@@ -4,9 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt 
 
 def plot_test_valid_loss(
-    test_loss_list, 
-    valid_loss_list, 
-    num_epochs, 
+    test_loss_list: list, 
+    valid_loss_list: list, 
+    train_loss_list: list,
+    num_epochs: int, 
     save_dir='results/', 
     title='Loss Curve', 
     save_name='loss_curve.png',
@@ -26,13 +27,15 @@ def plot_test_valid_loss(
     for i in range(num_epochs): 
         epoch_list.append(i + 1)
     # print(f'len(test_loss_list, valid_loss_list, epoch_list): {len(test_loss_list), len(valid_loss_list), len(epoch_list)}')
-    assert len(test_loss_list) == len(valid_loss_list) == len(epoch_list)
+    assert len(test_loss_list) == len(valid_loss_list) == len(train_loss_list) == len(epoch_list)
     test_losses = np.array(test_loss_list)
     valid_losses = np.array(valid_loss_list)
+    train_losses = np.array(train_loss_list)
     epochs = np.array(epoch_list)
 
     plt.plot(epochs, test_losses, label = 'test loss')
     plt.plot(epochs, valid_losses, label = 'valid loss')
+    plt.plot(epochs, train_losses, label = 'train loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     # plt.ylim(min(min(test_losses), min(valid_losses)), max(max(test_losses), max(valid_losses)))

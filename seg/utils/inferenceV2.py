@@ -237,7 +237,7 @@ def inference(model, loader, inferencer, loss_fn, test_type):
     '''
     model.eval()
 
-    test_types = ['valid', 'validation', 'test', 'testing']
+    test_types = ['valid', 'validation', 'test', 'testing', 'train', 'training']
     assert test_type in test_types, f'Options: {test_types}'
 
 
@@ -323,6 +323,9 @@ def inference(model, loader, inferencer, loss_fn, test_type):
     if test_type == 'valid' or test_type == 'validation':
         print("\nValidation Dataset Statistics: \n")
         logging.info("\nValidation Dataset Statistics: \n")
+    elif test_type == 'train' or test_type == 'training':
+        print("\nTraining Dataset Statistics: \n")
+        logging.info("\nTraining Dataset Statistics: \n") 
     else:
         print("\nTest Dataset Statistics: \n")
         logging.info("\nTest Dataset Statistics: \n")

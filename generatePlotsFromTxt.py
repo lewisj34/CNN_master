@@ -78,22 +78,20 @@ def generateTriLossPlot(
 
 if __name__ == '__main__':
 
-    parent_dir = 'loss_files_merged_combined_only_200'
+    parent_dir = 'results/DataParallel/DataParallel_19'
 
     chart_dir = f'{parent_dir}/charts/'
     os.makedirs(chart_dir, exist_ok=True)
 
     valid_iou_path = f'{parent_dir}/valid_iou_file.txt'
-
     test_iou_path = f'{parent_dir}/test_iou_file.txt'
-
     train_iou_path = f'{parent_dir}/train_iou_file.txt'
 
     generateTriLossPlot(
         test_iou_path, 
         valid_iou_path, 
         train_iou_path, 
-        f'IoU Loss Curve', 
+        f'IoU Loss Curve - New Merged Dataset', 
         f'Test', 
         f'Valid', 
         f'Training', 

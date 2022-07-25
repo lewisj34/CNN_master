@@ -4,6 +4,7 @@ import click
 import yaml
 import time
 import logging 
+import numpy as np 
 import socket
 
 from pathlib import Path
@@ -184,13 +185,21 @@ def main(
 
                 images = images.cpu().numpy().squeeze()
                 gts = gts.cpu().numpy().squeeze().squeeze()
-                print(f'images: {images.shape}')
-                print(f'gts: {gts.shape}')
-                if j == 3:
-                    exit(1)
+                # if j == 3:
+                #     ans = input(f'Proceed with the rest of the dataset? [y/n]... ')
+                #     if ans == 'y':
+                #         break
+                #     else:
+                #         exit(1)
+                print(f'output.shape: {output.shape}')
+                print(f'images.shape: {images.shape}'); 
+                images = np.transpose(images, (1,2,0))
+                print(f'images.shape: {images.shape}')
+                print(f'gts.shape: {gts.shape}')
                 imwrite(save_path + output_name, output)
                 imwrite(save_path + image_name, images)
                 imwrite(save_path + gt_name, gts)
+
 
     
 

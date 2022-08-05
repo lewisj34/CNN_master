@@ -71,7 +71,7 @@ def generateTriLossPlot(
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-    plt.plot(epoch_data[:max_epoch_to_plot], test_avg_data[:max_epoch_to_plot], label = label_test)
+    # plt.plot(epoch_data[:max_epoch_to_plot], test_avg_data[:max_epoch_to_plot], label = label_test)
     plt.plot(epoch_data[:max_epoch_to_plot], valid__data[:max_epoch_to_plot], label = label_valid)
     plt.plot(epoch_data[:max_epoch_to_plot], train_data[:max_epoch_to_plot], label = label_train)
     plt.xlabel('Epochs')
@@ -129,9 +129,9 @@ if __name__ == '__main__':
         train_iou_path, 
         f'IoU Loss Curve - Original Dataset', 
         f'Test', 
-        f'Valid', 
+        f'Validation', 
         f'Training', 
-        save_plot_name=f'{chart_dir}/iou_plot_master_completed_then_merged_400.png',
+        save_plot_name=f'{chart_dir}/iou_plot_master_completed_then_merged_400_no_test_curve.png',
         max_epoch_to_plot = 400,
     )
 

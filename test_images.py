@@ -31,7 +31,7 @@ from seg.model.losses.dicebce_loss import DiceBCELoss
 from seg.model.losses.focal_loss import FocalLoss
 from seg.model.losses.tversky import TverskyLoss
 from seg.utils.inferenceV2 import InferenceModule, SegmentationMetrics
-from seg.utils.t_dataset import get_tDataset, get_tDatasets_master
+from seg.utils.t_dataset import get_tDataset, get_tDatasets_master, get_tDatasetImageTest, get_tDatasets_masterImageTest
 
 from seg.utils.visualize import visualizeModelOutputfromDataLoader, plot_test_valid_loss
 from seg.utils.dataset import get_TestDatasetV2, get_dataset, getTestDatasetForVisualization
@@ -131,7 +131,7 @@ def main(
 
     # dataset stuff 
     if dataset != 'master':
-        test_loader = get_tDataset(
+        test_loader = get_tDatasetImageTest(
             image_root = save_dir + "/data_dataset_list_ordered.npy",
             gt_root = save_dir + "/mask_dataset_list_ordered.npy",
             normalize_gt = False,
@@ -139,9 +139,10 @@ def main(
             normalization = "vit",
             num_workers = 4, 
             pin_memory=True,
+            originalTxtFile="/home/lewisj34_local/Dev/CNN_master/seg/data/totals/CVC_ClinicDB/dataset_list_ordered.txt",
         )
         with progressbar.ProgressBar(max_value=len(test_loader)) as bar:
-            for i, image_gts in enumerate(test_loader):
+            for i, image_gts, og_text in enumerate(test_loader):
                 time.sleep(0.1)
                 bar.update(i)
                 
@@ -163,9 +164,9 @@ def main(
                 images = images.cpu().numpy().squeeze()
                 gts = gts.cpu().numpy().squeeze().squeeze()
                 images = np.transpose(images, (1,2,0))
-                imwrite(save_path + '/outputs/' + output_name, output)
-                imwrite(save_path + '/images/' + image_name, images)
-                imwrite(save_path + '/gts/' + gt_name, gts)
+                imwrite(save_path + '/outputs/' + og_text, output)
+                imwrite(save_path + '/images/' + og_text, images)
+                imwrite(save_path + '/gts/' + og_text, gts)
 
 
 

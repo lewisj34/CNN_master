@@ -6,6 +6,8 @@ import time
 import logging 
 import numpy as np 
 import socket
+import random
+import progressbar 
 
 from pathlib import Path
 from imageio import imwrite
@@ -124,7 +126,7 @@ def main(
     model.cuda()
     model.eval()
 
-    save_path = results_dir + '/tests/'
+    save_path = results_dir + '/tests/' + dataset + '/'
     os.makedirs(save_path, exist_ok=True)
     print(f'os.save_path: {save_path}')
 
@@ -139,19 +141,35 @@ def main(
             num_workers = 4, 
             pin_memory=True,
         )
-        for i, image_gts in enumerate(test_loader):
-            images, gts = image_gts
-            images = images.cuda()
-            gts = gts.cuda()
+        with progressbar.ProgressBar(max_value=len(test_loader)) as bar:
+            for i, image_gts in enumerate(test_loader):
+                time.sleep(0.1)
+                bar.update(i)
+                
+                images, gts = image_gts
+                images = images.cuda()
+                gts = gts.cuda()
 
-            with torch.no_grad():
-                output = model(images)
-            
-            print(f'output.shape: {output.shape}')
-            print(f'images.shape: {images.shape}')
-            print(f'gts.shape: {gts.shape}')
-            output = output.sigmoid().data.cpu().numpy().squeeze()
-            print(f'output.shape: {output.shape}')
+                with torch.no_grad():
+                    output = model(images)
+
+                # output = model(images)
+                output = output.sigmoid().data.cpu().numpy().squeeze()
+                
+                name = dataset + '_' + str(i)
+                output_name = name + '_output.jpg'
+                image_name = name + '_image.jpg'
+                gt_name = name + '_gt.jpg'
+
+                images = images.cpu().numpy().squeeze()
+                gts = gts.cpu().numpy().squeeze().squeeze()
+                output = output.sigmoid().data.cpu().numpy().squeeze()
+                images = np.transpose(images, (1,2,0))
+                imwrite(save_path + output_name, output)
+                imwrite(save_path + image_name, images)
+                imwrite(save_path + gt_name, gts)
+
+
 
     else:
         # NOTE: ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']

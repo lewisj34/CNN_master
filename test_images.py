@@ -142,11 +142,12 @@ def main(
             originalTxtFile="/home/lewisj34_local/Dev/CNN_master/seg/data/totals/CVC_ClinicDB/dataset_list_ordered.txt",
         )
         with progressbar.ProgressBar(max_value=len(test_loader)) as bar:
-            for i, image_gts, og_text in enumerate(test_loader):
+            for i, image_gts in enumerate(test_loader):
                 time.sleep(0.1)
                 bar.update(i)
                 
-                images, gts = image_gts
+                images, gts, og_text = image_gts
+                print(f'og_text: {og_text[0]}')
                 images = images.cuda()
                 gts = gts.cuda()
 
@@ -164,9 +165,9 @@ def main(
                 images = images.cpu().numpy().squeeze()
                 gts = gts.cpu().numpy().squeeze().squeeze()
                 images = np.transpose(images, (1,2,0))
-                imwrite(save_path + '/outputs/' + og_text, output)
-                imwrite(save_path + '/images/' + og_text, images)
-                imwrite(save_path + '/gts/' + og_text, gts)
+                imwrite(save_path + '/outputs/' + og_text[0], output)
+                imwrite(save_path + '/images/' + og_text[0], images)
+                imwrite(save_path + '/gts/' + og_text[0], gts)
 
 
 

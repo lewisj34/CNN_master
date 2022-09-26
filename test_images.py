@@ -66,10 +66,6 @@ def main(
     checkpoint_pth,
     save_dir,
 ):
-    if socket.gethostname() == 'ce-yc-dlearn6.eng.umanitoba.ca' or socket.gethostname() == 'ce-yc-dlearn5.eng.umanitoba.ca':
-        dataset_file_location = '/home/lewisj34_local/Dev/Datasets/master_polyp'
-        print(f'Manually adjusting dataset_file_location to: {dataset_file_location}')
-    
     final_cfg = yaml.load(open(Path(results_dir) / "final_config.yml", "r"),
         Loader=yaml.FullLoader)
     
@@ -133,8 +129,8 @@ def main(
     # dataset stuff 
     if dataset != 'master':
         test_loader = get_tDataset(
-            image_root = save_dir + "/data_test.npy",
-            gt_root = save_dir + "/mask_test.npy",
+            image_root = save_dir + "/data_train.npy",
+            gt_root = save_dir + "/mask_train.npy",
             normalize_gt = False,
             batch_size = 1,
             normalization = "vit",
@@ -163,7 +159,6 @@ def main(
 
                 images = images.cpu().numpy().squeeze()
                 gts = gts.cpu().numpy().squeeze().squeeze()
-                output = output.sigmoid().data.cpu().numpy().squeeze()
                 images = np.transpose(images, (1,2,0))
                 imwrite(save_path + output_name, output)
                 imwrite(save_path + image_name, images)

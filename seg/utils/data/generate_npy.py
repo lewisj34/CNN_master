@@ -571,7 +571,8 @@ def process_dataset(
     np.save('{}/data_{}.npy'.format(save_location, set_name), imgs)
     np.save('{}/mask_{}.npy'.format(save_location, set_name), masks)  
 
-
+    print('Dataset totals data npy files saved to: {}/data_{}.npy'.format(save_location, set_name))
+    print('Dataset totals mask npy files saved to: {}/mask_{}.npy'.format(save_location, set_name))
 
 def get_random_crop(image, mask, crop_height, crop_width):
 
@@ -906,146 +907,6 @@ def split_and_convert_to_npyV2(
             crop_size = crop_size,
             image_size = image_size,
         )
-    ########################################################################
-    # DEFUNCT BELOW THIS LINE. JUST WAS GETTING US WHAT WE NEEDED IN TERMS OF 
-    # CROP AND STUFF SO THAT WE COULD FINALIZE process_dataset(...)
-    ########################################################################
-
-    # get a test batch and a list of paths - this will be done in the process_dataset above
-    # but what were trying to do is modify that right now 
-    # data_dir = '/home/john/Documents/Datasets/kvasir_small'
-    # img_dir = data_dir + '/images/'
-    # ann_dir = data_dir + '/annotations/'
-
-    # image_path_list = list()
-    # ann_path_list = list()
-    # for file in os.listdir(img_dir):
-    #     filename = os.fsdecode(file)
-    #     image_path_list.append(img_dir + filename)
-    # for file in os.listdir(ann_dir):
-    #     filename = os.fsdecode(file)
-    #     ann_path_list.append(ann_dir + filename)
-
-    # manually_input_observed_size_of_image_dir = 10
-    # assert len(image_path_list) == len(ann_path_list) == manually_input_observed_size_of_image_dir
-    # length = len(image_path_list)
-
-
-    # imgs = np.uint8(np.zeros([length, image_size[0], image_size[1], 3]))
-    # masks = np.uint8(np.zeros([length, image_size[0], image_size[1]]))
-
-
-
-    # count = 0 
-  
-    # # to be deleted 
-    # visualize_images = True
-    # if resize_image:
-    #     images_before_cropping = np.uint8(np.zeros([length, resize_size[0], resize_size[1], 3]))
-    #     masks_before_cropping = np.uint8(np.zeros([length, resize_size[0], resize_size[1]]))
-    # if crop_image:
-    #     images_after_cropping = np.uint8(np.zeros([length, crop_size[0], crop_size[1], 3]))
-    #     masks_after_cropping = np.uint8(np.zeros([length, crop_size[0], crop_size[1]]))
-
-
-    # for i in tqdm(range(manually_input_observed_size_of_image_dir)):
-    #     sleep(0.0001)
-
-    #     img = cv2.imread(image_path_list[i])
-    #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    #     # to be deleted
-    #     img_before_resize_and_crop = img
-
-    #     if resize_image:
-    #         img = cv2.resize(img, (resize_size[0], resize_size[1]))
-    #         image_after_resize = img
-
-    #     mask = cv2.imread(ann_path_list[i], 0)
-
-    #     # to be deleted
-    #     mask_before_resize_and_crop = mask
-
-    #     if resize_image:
-    #         mask = cv2.resize(mask, (resize_size[0], resize_size[1]))
-    #         mask_after_resize = mask
-
-    #     if crop_image:
-    #         assert crop_size[0] is not None and crop_size[1] is not None, \
-    #             crop_err3(crop_size[0], crop_size[1])
-
-    #         # to be deleted
-    #         if resize_image:
-    #             images_before_cropping[count] = img # to be deletd 
-    #             masks_before_cropping[count] = mask # to be deletd   
-
-    #         # KEEP THIS!!!!!!!!!!!
-    #         img, mask = get_random_crop(img, mask, crop_size[0], crop_size[1])
-
-    #         # to be deleted
-    #         images_after_cropping[count] = img # to be deletd 
-    #         masks_after_cropping[count] = mask # to be deletd
-        
-    #     # to be deleted
-    #     if visualize_images:
-    #         if resize_image and crop_image:
-    #             showSingleImageAndMask(
-    #                 img_before_resize_and_crop,
-    #                 mask_before_resize_and_crop,
-    #                 images_before_cropping[count],
-    #                 images_after_cropping[count],
-    #                 masks_before_cropping[count],
-    #                 masks_after_cropping[count],
-    #             )
-    #         if resize_image and not crop_image:
-    #             showImageJUSTResizedORJUSTCropped(
-    #                 img_before_resize_and_crop,
-    #                 mask_before_resize_and_crop,
-    #                 image_after_resize,
-    #                 mask_after_resize,
-    #             )
-    #         if crop_image and not resize_image:
-    #             showImageJUSTResizedORJUSTCropped(
-    #                 img_before_resize_and_crop,
-    #                 mask_before_resize_and_crop,
-    #                 images_after_cropping[count],
-    #                 masks_after_cropping[count]
-    #             )
-    #     imgs[count] = img
-    #     masks[count] = mask
-    #     count += 1 
-
-
-
-    # set_name = os.path.splitext(os.path.basename(split_path))[0]
-
-
-    # np.set_printoptions(threshold=sys.maxsize)
-    # print(masks[5,20:100,20:100])
-
-
-    # img_test_path = data_dir + '/images/' 'cju0rx1idathl0835detmsp84.jpg'
-    # msk_test_path = data_dir + '/annotations/' + 'cju0rx1idathl0835detmsp84.jpg'
-    
-
-    # img = cv2.imread(img_test_path, cv2.IMREAD_COLOR)
-    # mask = cv2.imread(msk_test_path, cv2.IMREAD_GRAYSCALE)
-
-    # get a list of the paths, this would be done already in the program 
-
-
-
-    # imgs = np.uint8(np.zeros([length, height, width, 3]))
-    # plt.imshow(img, cmap='gray')
-    # plt.imshow(mask, cmap='gray')
-    # plt.show()
-    
-    # ade20k_one_hot = one_hot_encode(random_mask_ADEK, num_classes = 150)
-
-    # print(f'ade20k_one_hot.shape: {ade20k_one_hot.shape} ')
-
-    # kvasir_one_hot = one_hot_encode(kvasir_path, num_classes = 2)
-    # print(f'kvasir_one_hot.shape: {kvasir_one_hot.shape} ')
 
 def showSingleImageAndMask(
     image_before_resize,

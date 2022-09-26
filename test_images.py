@@ -132,8 +132,8 @@ def main(
     # dataset stuff 
     if dataset != 'master':
         test_loader = get_tDataset(
-            image_root = save_dir + "/data_train.npy",
-            gt_root = save_dir + "/mask_train.npy",
+            image_root = save_dir + "/data_dataset_list_ordered.npy",
+            gt_root = save_dir + "/mask_dataset_list_ordered.npy",
             normalize_gt = False,
             batch_size = 1,
             normalization = "vit",

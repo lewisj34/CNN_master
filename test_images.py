@@ -124,6 +124,9 @@ def main(
 
     save_path = results_dir + '/tests/' + dataset + '/'
     os.makedirs(save_path, exist_ok=True)
+    os.makedirs(save_path + '/images/', exist_ok=True)
+    os.makedirs(save_path + '/gts/', exist_ok=True)
+    os.makedirs(save_path + '/outputs/', exist_ok=True)
     print(f'os.save_path: {save_path}')
 
     # dataset stuff 
@@ -160,9 +163,9 @@ def main(
                 images = images.cpu().numpy().squeeze()
                 gts = gts.cpu().numpy().squeeze().squeeze()
                 images = np.transpose(images, (1,2,0))
-                imwrite(save_path + output_name, output)
-                imwrite(save_path + image_name, images)
-                imwrite(save_path + gt_name, gts)
+                imwrite(save_path + '/outputs/' + output_name, output)
+                imwrite(save_path + '/images/' + image_name, images)
+                imwrite(save_path + '/gts/' + gt_name, gts)
 
 
 
@@ -209,9 +212,9 @@ def main(
                 images = np.transpose(images, (1,2,0))
                 print(f'images.shape: {images.shape}')
                 print(f'gts.shape: {gts.shape}')
-                imwrite(save_path + output_name, output)
-                imwrite(save_path + image_name, images)
-                imwrite(save_path + gt_name, gts)
+                imwrite(save_path + '/outputs/' + output_name, output)
+                imwrite(save_path + '/images/' + image_name, images)
+                imwrite(save_path + '/gts/' + gt_name, gts)
 
 
     

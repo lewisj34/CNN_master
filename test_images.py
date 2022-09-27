@@ -59,7 +59,7 @@ def force_cudnn_initialization():
 @click.option('--results_dir', type=str, default='results/DataParallel/DataParallel_11')
 @click.option('--checkpoint_pth', type=str, default='results/DataParallel/DataParallel_11/current_checkpoints/DataParallel-218.pth')
 @click.option('--dataset', type=str, default='master')
-@click.option('--save_dir', type = str, default='seg/data/master')
+@click.option('--save_dir', type = str, default='seg/data/totals/CVC_ClinicDB/')
 def main(
     dataset,
     results_dir,
@@ -139,7 +139,7 @@ def main(
             normalization = "vit",
             num_workers = 4, 
             pin_memory=True,
-            originalTxtFile="/home/lewisj34_local/Dev/CNN_master/seg/data/totals/CVC_ClinicDB/dataset_list_ordered.txt",
+            originalTxtFile= save_dir + "/dataset_list_ordered.txt", # if it's not in the save_dir you have to move it there
         )
         with progressbar.ProgressBar(max_value=len(test_loader)) as bar:
             for i, image_gts in enumerate(test_loader):
@@ -170,7 +170,7 @@ def main(
                 imwrite(save_path + '/gts/' + og_text[0], gts)
 
 
-
+# MASTER DOES NOT WORK WITH ORIGINAL NAMING SYSTEM !!!!!!!!!!!!!!!!!!! 
     else:
         # NOTE: ['CVC_300', 'CVC_ClinicDB', 'CVC_ColonDB', 'ETIS', 'Kvasir']
         test_loader = get_tDatasets_master(

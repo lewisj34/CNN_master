@@ -45,3 +45,11 @@ dice_max.csv
 dataset_master_loss_files/
 loss_files_test/
 best_results_cand/
+
+loss_files_07_13_2022
+loss_files_merged_07_07_2022
+loss_files_07_13_2022_combined_full_400/
+loss_files_merged_combined_only_200/
+best_files/
+
+GenerateMaskOverlays/CVC_ColonDB_total/

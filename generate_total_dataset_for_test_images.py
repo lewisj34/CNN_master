@@ -4,6 +4,11 @@ to the full dataset (UNSPLIT), and then generates npy files corresponding to
 that "split" (even though thats a misnomer, it generates npy files corresponding)
 to (hopefully) the full ORDERED datset so that hopefully we can generate gif files
 without having to reorganize the whole dataset
+
+WHY DID WE DO THIS: 
+1. We wanted to run a test_images on an ENTIRE dataset so that we could hopefully get
+as many consistent frames that could then make a gif for seamless presentation IN ORDER
+so that we weren't going through the dataset over and over again 
 """
 import os
 import click
@@ -25,6 +30,8 @@ def generate_splits_in_order(
         parent_dir: holds the images and annotations dir (assumes same file type)
     returns:
         split_path: holds split_path for imgs and anns 
+
+    Sample usage: python generate_total_dataset_for_test_images.py --dataset_save_name CVC_ColonDB --parent_dir /home/john/Documents/Datasets/CVC-ColonDB
     """
     img_dir = parent_dir + '/images/'
     ann_dir = parent_dir + '/annotations/'

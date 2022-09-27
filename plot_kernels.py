@@ -127,12 +127,46 @@ def main(
     os.makedirs(save_path, exist_ok=True)
     print(f'os.save_path: {save_path}')
 
-    mm = model.double()
-    filters = mm.modules
-    body_model = [i for i in mm.children()][0]
-    layer1 = body_model[0]
-    tensor = layer1.weight.data.numpy()
-    plot_kernels(tensor)
+    model = model.module
+    for name, module in model.named_children():
+        if name == 'cnn_branch':
+            print(f'cnn_branch')
+            for name_cnn, module_cnn in module.named_children():
+                print(f'\t layer: {name_cnn}')
+                for name_cnn_sub_layer, module_cnn_sub_layer in module_cnn.named_children():
+                    print(f'\t\t sub_layer: {name_cnn_sub_layer}')
+                    for name_cnn_sub_layer_i, module_cnn_sub_layer_i in module_cnn_sub_layer.named_children():
+                        print(f'\t\t\t sub_layer_i: {name_cnn_sub_layer_i}')
+                        # if name_cnn == 'inc':
+                        #     layer_of_interest = module_cnn_sub_layer[0]
+                        #     layer = layer_of_interest.double()
+                        #     tensor = layer.weight.data.cpu().numpy()
+                        #     plot_kernels(tensor)
+        if name == 'trans_branch':
+            print(f'trans_branch')
+            for name_trans, module_trans in module.named_children():
+                print(f'\t layer: {name_trans}')
+                for name_trans_sub_layer, module_trans_sub_layer in module_trans.named_children():
+                    print(f'\t\t sub_layer: {name_trans_sub_layer}')
+                    for name_trans_sub_layer_i, module_trans_sub_layer_i in module_trans_sub_layer.named_children():
+                        print(f'\t\t\t sub_layer_i: {name_trans_sub_layer_i}')
+                        if name_trans == 'encoder' and name_trans_sub_layer_i == "proj":
+                            layer_of_interest = module_trans_sub_layer_i
+                            layer = layer_of_interest.double()
+                            tensor = layer.weight.data.cpu().numpy()
+                            plot_kernels(np.transpose(tensor, (0, 2, 3, 1)))
+                            plot_kernels(tensor[0:16, :, : , :])
+        print(f'module: {name}')
+
+
+    # mm = model.double()
+    # filters = mm.modules
+    
+    # body_model = [i for i in mm.children()][0]
+
+    # layer1 = body_model[0]
+    # tensor = layer1.weight.data.numpy()
+    # plot_kernels(tensor)
 
 if __name__ == '__main__':
     main()

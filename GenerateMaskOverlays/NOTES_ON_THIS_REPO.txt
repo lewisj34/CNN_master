@@ -1,0 +1,16 @@
+This repo basically requires:
+1. test_images.py from CNN_MASTER is run with the dataset != master 
+2. copy all of the images to onedrive and then load them here (if test_images is run properly) it should output 3 directories as seen in this one that have ALREADY been copied with gts/ images/ & outputs/ 
+3. then all you have to do, assuming the name of the directory is CVC_ColonDB_total
+4. python main.py --save_dir 'CVC_ClinicDB_total/' --src_imgs 'CVC_ClinicDB_total/images' --src_anns 'CVC_ClinicDB_total/gts' --src_prds 'CVC_ClinicDB_total/outputs'
+5. This if it doesnt error on you, should produce 3 new directories /img_prds showing the predicted mask over the original image, /img_anns showing the annotation  mask over the gts, and /MultiPlot showing the predicted mask and the ground truth with the original image all in a 3 plot. 
+
+The way this dataset was originally constructed in step 1 -> was produced using the WHOLE CVC_ClinicDB and CVC_ColonDB dataset, using the script generate_total_dataset_for_test_images.py in CNN_MASTER, which generates a list of files in order assuming the numbers of each file in the image/ and ann/ dataset are the same and are png files and then creates npy files from this new "split" file which is really just a txt file naming them 
+
+anyways lots of steps, if im ever reading this in the future -> good luck! 
+
+To get the gts/ images/ outputs/ directories you need test_images.py to produce a set of folders
+I've only tested this with the dataset != master set so one in which theres a set of images/ and anns/ and txt file detailing the file names in each 
+
+if you want them ordered you then need generate_total_dataset_for_test_images.py which will generate npy files and a split file detailing the names in all the images and ann/ directories 
+and output them in order 

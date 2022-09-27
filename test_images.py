@@ -129,7 +129,13 @@ def main(
     os.makedirs(save_path + '/outputs/', exist_ok=True)
     print(f'os.save_path: {save_path}')
 
-    # dataset stuff 
+    # THIS IS WHAT YOU WANT i.e. if dataset != 'master' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+    # RUN IT THROUGH THIS -> VERY SIMPLE PAY ATENTION TO WHATS IN image_root, gt_root and originalTxtFile
+    # you need the originalTxtFile because thats what MAPS the name of the image its seeing and 
+    # ends up producing the _, _, og_text (which is the original file name)
+    # if you didn't have this, the dataloader would load the images in randomly and 
+    # consequently the i in enumerate(test_loader) would have NO meaning and the file name
+    # saves if it were based on the i would be random
     if dataset != 'master':
         test_loader = get_tDatasetImageTest(
             image_root = save_dir + "/data_dataset_list_ordered.npy",

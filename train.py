@@ -798,6 +798,14 @@ def main(
             num_output_trans_big=64,
             num_output_trans_sml=1,
         ).cuda()
+    elif model_name == 'AblationStudyScientificReportsNoViTUNetReplace':
+        from seg.model.Fusion.AblationStudiesScientificReports.NewFusionNetworkScientificReports import AblationStudyScientificReportsNoViTUNetReplace
+        model = AblationStudyScientificReportsNoViTUNetReplace(
+            cnn_model_cfg,
+            trans_model_cfg
+        ).cuda()
+        count_parameters(model)
+        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

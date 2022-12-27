@@ -79,13 +79,13 @@ running the terminal right now so...') # SEE BELOW.... decoder = 'linear'
         self.with_fusion = with_fusion
         if self.with_fusion:
             self.fuse_1_2 = MiniEncoderFuseDWSep( # NOTE: 64 classes trans output manually input here 
-                self.cnn_branch.x_1_2.shape[1], num_output_trans, 64, 1, stage = '1_2')
+                self.cnn_branch.x_1_2.shape[1], num_output_trans, self.trans_branch.x_1_2.shape[1], 1, stage = '1_2')
             self.fuse_1_4 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_4.shape[1], num_output_trans, 64, 1, stage='1_4')
+                self.cnn_branch.x_1_4.shape[1], num_output_trans, self.trans_branch.x_1_4.shape[1], 1, stage='1_4')
             self.fuse_1_8 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_8.shape[1], num_output_trans, 64, 1, stage='1_8')
+                self.cnn_branch.x_1_8.shape[1], num_output_trans, self.trans_branch.x_1_8.shape[1], 1, stage='1_8')
             self.fuse_1_16 = MiniEncoderFuseDWSep(
-                self.cnn_branch.x_1_16.shape[1], num_output_trans, 64, 1, stage='1_16')
+                self.cnn_branch.x_1_16.shape[1], num_output_trans, self.trans_branch.x_1_16.shape[1], 1, stage='1_16')
             if self.patch_size == 32:
                 self.fuse_1_32 = MiniEncoderFuseDWSep(
                     self.cnn_branch.x_1_32.shape[1], num_output_trans, 64, 1, stage='1_32')

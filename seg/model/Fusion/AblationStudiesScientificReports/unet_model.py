@@ -62,6 +62,4 @@ class UNet(nn.Module):
             print(f'self.x_1_4.shape: {self.x_1_4.shape}')
             print(f'self.x_1_8.shape: {self.x_1_8.shape}')
             print(f'self.x_1_16.shape: {self.x_1_16.shape}')
-            if self.patch_size == 32:
-                print(f'self.x_1_32.shape: {self.x_1_32.shape}')
         del dummy_tensor

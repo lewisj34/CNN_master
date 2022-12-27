@@ -21,7 +21,7 @@ from seg.model.transformer.create_modelV2 import create_transformerV2
 from seg.model.Fusion.fuse import SimpleFusion
 from ..fuse import CCMFusionModule, MiniEncoderFuse, MiniEncoderFuseDWSep, MiniEncoderFuseDWSepRFB
 
-from unet_model import UNet
+from .unet_model import UNet
 
 class AblationStudyScientificReportsNoViTUNetReplace(nn.Module):
     def __init__(

@@ -804,8 +804,6 @@ def main(
             cnn_model_cfg,
             trans_model_cfg
         ).cuda()
-        count_parameters(model)
-        exit(1)
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    

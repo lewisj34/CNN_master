@@ -171,3 +171,21 @@ class AblationStudyScientificReportsNoViTNoReplacement(nn.Module):
                 tensor_list = [x_final_cnn, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
                 return mean
+
+class JustViT(nn.Module):
+    def __init__(
+        self, 
+        trans_model_cfg,
+        ):
+        super(JustViT, self).__init__()
+        
+        self.trans_branch = create_transformerV2(trans_model_cfg, 
+            decoder='linear')
+        
+        num_output_trans = trans_model_cfg['num_output_trans']
+        print(f'num_output_trans: {num_output_trans}')
+
+
+    def forward(self, images):
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+        return x_final_trans

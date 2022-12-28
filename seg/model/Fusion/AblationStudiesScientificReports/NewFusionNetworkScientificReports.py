@@ -154,7 +154,7 @@ class AblationStudyScientificReportsNoViTNoReplacement(nn.Module):
 
     def forward(self, images):
         x_final_cnn = self.cnn_branch(images)
-        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+        
 
         '''
         self.CNN_BRANCH and self.TRANSFORMER_BRANCH should have same members:
@@ -162,16 +162,12 @@ class AblationStudyScientificReportsNoViTNoReplacement(nn.Module):
         '''
         if self.with_fusion:
             # 1 / 2 - note (kind of wack given that you have to interploate from 1/4)
-            self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, self.trans_branch.x_1_2)
-            self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, self.trans_branch.x_1_4)
-            self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, self.trans_branch.x_1_8)
-            self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, self.trans_branch.x_1_16)
+            self.x_1_2 = self.fuse_1_2(self.cnn_branch.x_1_2, None)
+            self.x_1_4 = self.fuse_1_4(self.cnn_branch.x_1_4, None)
+            self.x_1_8 = self.fuse_1_8(self.cnn_branch.x_1_8, None)
+            self.x_1_16 = self.fuse_1_16(self.cnn_branch.x_1_16, None)
 
             if self.patch_size == 16:
-                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
+                tensor_list = [x_final_cnn, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16]
                 mean = torch.mean(torch.stack(tensor_list), dim=0) 
                 return mean
-            elif self.patch_size == 32:
-                x_1_32 = self.fuse_1_32(self.cnn_branch.x_1_32, self.trans_branch.x_1_32)
-                tensor_list = [x_final_cnn, x_final_trans, self.x_1_2, self.x_1_4, self.x_1_8, self.x_1_16, self.x_1_32]
-                mean = torch.mean(torch.stack(tensor_list), dim=0) 

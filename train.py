@@ -804,7 +804,7 @@ def main(
             cnn_model_cfg,
             trans_model_cfg
         ).cuda()
-    elif model_name == 'AblationStudyScientificReportsNoViTUNetReplace':
+    elif model_name == 'AblationStudyScientificReportsNoViTNoReplacement':
         from seg.model.Fusion.AblationStudiesScientificReports.NewFusionNetworkScientificReports import AblationStudyScientificReportsNoViTNoReplacement
         model = AblationStudyScientificReportsNoViTNoReplacement(
             cnn_model_cfg,

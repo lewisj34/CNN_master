@@ -16,8 +16,8 @@ from seg.model.transformer.decoder_new import DecoderMultiClassDilationAndSCSE, 
 from seg.model.transformer.transformerV3 import create_transformerV3
 
 from seg.model.zed.zedNet import zedNet, zedNetDWSep, zedNetDWSepWithCCMAndRFB, zedNetMod, zedNetDWSepWithCCM, zedNetDWSepWithCCMinAllOfIt, zedNetDWSepWithCCMmodeddedFromBest
-from seg.model.transformer.create_model import create_transformer
 from seg.model.transformer.create_modelV2 import create_transformerV2
+from seg.model.transformer.create_model_just_linear import create_transformer
 from seg.model.Fusion.fuse import SimpleFusion
 from ..fuse import CCMFusionModule, MiniEncoderFuse, MiniEncoderFuseDWSep, MiniEncoderFuseDWSepNoTrans, MiniEncoderFuseDWSepRFB
 
@@ -178,13 +178,27 @@ class JustViT(nn.Module):
         trans_model_cfg,
         ):
         super(JustViT, self).__init__()
-        
+
         self.trans_branch = create_transformerV2(trans_model_cfg, 
             decoder='linear')
         
         num_output_trans = trans_model_cfg['num_output_trans']
         print(f'num_output_trans: {num_output_trans}')
 
+
+    def forward(self, images):
+        x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156
+        return x_final_trans
+
+class JustViTAndPartialDec(nn.Module):
+    def __init__(
+        self, 
+        trans_model_cfg,
+        ):
+        super(JustViTAndPartialDec, self).__init__()
+        
+        self.trans_branch = create_transformer(trans_model_cfg, 
+            decoder='linear')
 
     def forward(self, images):
         x_final_trans = self.trans_branch(images) # 5 x 1 x 156 x 156

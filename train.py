@@ -815,6 +815,11 @@ def main(
         model = JustViT(
             trans_model_cfg=trans_model_cfg
         ).cuda()
+    elif model_name == 'JustViTAndPartialDecoder':
+        from seg.model.Fusion.AblationStudiesScientificReports.NewFusionNetworkScientificReports import JustViTAndPartialDec
+        model = JustViTAndPartialDec(
+            trans_model_cfg=trans_model_cfg
+        ).cuda()
     else:
         raise ValueError(f'Invalid model_name: {model_name}')
     print(f'Model {model_name} loaded succesfully.')    
